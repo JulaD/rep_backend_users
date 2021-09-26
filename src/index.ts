@@ -2,19 +2,30 @@
 import express, { Application } from 'express';
 import 'dotenv/config';
 import cors from 'cors';
+import swaggerJsDoc, { Options } from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import helmet from 'helmet';
-import YAML from 'yamljs';
 import Routes from './routes';
-// import logger from './Logger/logger';
 
 const app: Application = express();
 const PORT = process.env.PORT || 8000;
-app.use(helmet.hidePoweredBy());
+
 // swagger init
-const swaggerDocument = YAML.load('./swagger.yaml');
+const swaggerOptions: Options = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'REPP Rest API',
+      version: '1.0.0',
+      description: '',
+      servers: ['http://localhost:3000'],
+    },
+  },
+  apis: ['src/routes.ts'],
+};
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
 // middlewares
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use(express.json({
   limit: '50mb',
@@ -35,5 +46,4 @@ app.use(Routes);
 
 app.listen(PORT, (): void => {
   console.log(`REPP Backend running here 👉 https://localhost:${PORT}`);
-  logger.info('Server initiated');
 });
