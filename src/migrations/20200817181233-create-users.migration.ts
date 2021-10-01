@@ -8,11 +8,27 @@ export const up = (queryInterface: any, Sequelize: any) => queryInterface.create
   name: {
     type: Sequelize.STRING,
     allowNull: true,
+    validate: {
+      notEmpty: true,
+      len: [3, 40],
+    },
   },
   email: {
     type: Sequelize.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      isEmail: true,
+      max: 60,
+    },
+  },
+  organization: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      max: 50,
+    },
   },
   password: {
     type: Sequelize.STRING,

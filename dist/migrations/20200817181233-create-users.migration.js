@@ -18,6 +18,10 @@ const up = (queryInterface, Sequelize) => {
             allowNull: false,
             unique: true
         },
+        organization: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
         password: {
             type: Sequelize.STRING,
             allowNull: false

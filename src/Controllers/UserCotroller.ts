@@ -48,7 +48,17 @@ const password = async (req: Request, res: Response): Promise<Response> => {
 
 const approve = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.approve(Number(req.params.id), req.body);
+    const user: User = await UserService.approve(Number(req.params.id));
+    return res.status(200).send(user);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const cancel = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const user: User = await UserService.cancel(Number(req.params.id));
     return res.status(200).send(user);
   } catch (error) {
     const e = error as Error;
@@ -82,5 +92,8 @@ router.route('/:id/approve')
 
 router.route('/:id/active')
   .patch(active);
+
+router.route('/:id/cancel')
+  .put(cancel);
 
 export default router;

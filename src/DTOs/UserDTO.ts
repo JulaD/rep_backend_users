@@ -1,13 +1,22 @@
 export interface UserCreateDTO {
   name: string;
   email: string;
+  organization: string;
   password: string;
-  repeat: string;
-  type: number;
-  status: number;
 }
 
 export interface UserLoginDTO {
   email: string;
   password: string;
+}
+
+export interface UserDTO {
+  id: number;
+  name: string;
+  email: string;
+  organization: string;
+  type: number;
+  status: number;
+  active: boolean;
+  createdAt: Date;
 }
