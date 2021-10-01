@@ -58,7 +58,17 @@ const password = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const approve = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield UserService_1.default.approve(Number(req.params.id), req.body);
+        const user = yield UserService_1.default.approve(Number(req.params.id));
+        return res.status(200).send(user);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const cancel = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield UserService_1.default.cancel(Number(req.params.id));
         return res.status(200).send(user);
     }
     catch (error) {
@@ -88,5 +98,7 @@ router.route('/:id/approve')
     .put(approve);
 router.route('/:id/active')
     .patch(active);
+router.route('/:id/cancel')
+    .put(cancel);
 exports.default = router;
 //# sourceMappingURL=UserCotroller.js.map

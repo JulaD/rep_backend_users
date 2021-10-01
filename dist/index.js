@@ -11,7 +11,7 @@ const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 // swagger init
 const swaggerOptions = {
     swaggerDefinition: {

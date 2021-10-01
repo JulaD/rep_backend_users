@@ -12,92 +12,88 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_enum_1 = require("../enums/index.enum");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const index_enum_1 = require("../enums/index.enum");
 const users_model_1 = require("../models/users.model");
 const list = (limit, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let options = {};
     if (limit && offset) {
         options = {
             limit,
-            offset
+            offset,
         };
     }
     return users_model_1.User.findAndCountAll(Object.assign({ attributes: [
-            'id', 'name', 'email', 'type', 'active'
+            'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
         ], order: [
-            ['name', 'ASC']
+            ['createdAt', 'ASC'],
         ] }, options));
 });
 const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
     return users_model_1.User.findOne({
         where: {
-            email: userDTO.email
-        }
+            email: userDTO.email,
+        },
     }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
         if (user) {
-            throw new Error('email in use');
+            throw new Error('email is taken');
         }
         else {
-            let password = userDTO.password;
-            let repeat = userDTO.repeat;
-            if (password == repeat) {
-                return users_model_1.User.create({
+            // se hace el checkeo antes porque luego se encripta
+            if (userDTO.password.length >= 6) {
+                const newUser = yield users_model_1.User.create({
                     name: userDTO.name,
                     email: userDTO.email,
-                    password: bcrypt_1.default.hashSync(userDTO.password || '1234', 10),
-                    type: userDTO.type || index_enum_1.profiles.unassigned,
-                    status: userDTO.status || index_enum_1.status.approved,
+                    organization: userDTO.organization,
+                    password: bcrypt_1.default.hashSync(userDTO.password, 10),
+                    type: index_enum_1.profiles.client,
+                    status: index_enum_1.status.pending,
                     createdBy: 1,
-                    createdAt: new Date()
+                    createdAt: new Date(),
                 }).catch((error) => {
-                    1234;
                     console.log(error);
                     throw new Error('create user error');
                 });
+                newUser.toJSON();
+                return newUser;
             }
-            else {
-                throw new Error('passwords doesn\'t match');
-            }
+            throw new Error('password too short');
         }
     })).catch((error) => {
-        1234;
         console.log(error);
-        throw new Error('find user error');
+        throw error;
     });
 });
 const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* () {
     return users_model_1.User.findOne({
         attributes: [
-            'id', 'name', 'email'
+            'id', 'name', 'email',
         ],
         where: {
-            id: userId
-        }
+            id: userId,
+        },
     }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
         if (!user) {
             throw new Error('user not found');
         }
         else {
-            let emailUser = yield users_model_1.User.findOne({
+            const emailUser = yield users_model_1.User.findOne({
                 where: {
-                    email: userDTO.email
-                }
+                    email: userDTO.email,
+                },
             });
-            if (!emailUser || emailUser.get('id') == user.get('id')) {
+            if (!emailUser || emailUser.get('id') === user.get('id')) {
                 return user.update({
                     name: userDTO.name,
                     email: userDTO.email,
-                    type: userDTO.type || index_enum_1.profiles.unassigned,
-                    updatedAt: new Date()
+                    organization: userDTO.organization,
+                    updatedAt: new Date(),
                 }).catch((error) => {
                     console.log(error);
                     throw new Error('user update error');
                 });
             }
-            else {
-                throw new Error('email in use');
-            }
+            throw new Error('email in use');
         }
     })).catch((error) => {
         console.log(error);
@@ -107,54 +103,75 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
 const password = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* () {
     return users_model_1.User.findOne({
         attributes: [
-            'id', 'name', 'email'
+            'id', 'name', 'email',
         ],
         where: {
-            id: userId
-        }
-    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
-        if (!user) {
-            throw new Error('user not found');
-        }
-        else {
-            let password = userDTO.password;
-            let repeat = userDTO.repeat;
-            if (password == repeat) {
-                return user.update({
-                    password: bcrypt_1.default.hashSync(userDTO.password, 10),
-                    updatedAt: new Date()
-                }).catch((error) => {
-                    console.log(error);
-                    throw new Error('user update error');
-                });
-            }
-            else {
-                throw new Error('passwords doesn\'t match');
-            }
-        }
-    })).catch((error) => {
-        console.log(error);
-        throw new Error('find user error');
-    });
-});
-const approve = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* () {
-    return users_model_1.User.findOne({
-        attributes: [
-            'id', 'name',
-            'email', 'type',
-            'createdAt'
-        ],
-        where: {
-            id: userId
-        }
+            id: userId,
+        },
     }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
         if (!user) {
             throw new Error('user not found');
         }
         else {
             return user.update({
-                status: userDTO.status,
-                updatedAt: new Date()
+                password: bcrypt_1.default.hashSync(userDTO.password, 10),
+                updatedAt: new Date(),
+            }).catch((error) => {
+                console.log(error);
+                throw new Error('user update error');
+            });
+        }
+    })).catch((error) => {
+        console.log(error);
+        throw new Error('find user error');
+    });
+});
+const approve = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: [
+            'id', 'name',
+            'email', 'type',
+            'createdAt',
+        ],
+        where: {
+            id: userId,
+        },
+    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!user) {
+            throw new Error('user not found');
+        }
+        else {
+            return user.update({
+                status: index_enum_1.status.approved,
+                updatedAt: new Date(),
+            }).catch((error) => {
+                console.log(error);
+                throw new Error('user update error');
+            });
+        }
+    })).catch((error) => {
+        console.log(error);
+        throw new Error('find user error');
+    });
+});
+const cancel = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: [
+            'id', 'name',
+            'email', 'type',
+            'createdAt',
+        ],
+        where: {
+            id: userId,
+        },
+    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!user) {
+            throw new Error('user not found');
+        }
+        else {
+            return user.update({
+                status: index_enum_1.status.pending,
+                updatedAt: new Date(),
             }).catch((error) => {
                 console.log(error);
                 throw new Error('user update error');
@@ -168,8 +185,8 @@ const approve = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function*
 const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     return users_model_1.User.findOne({
         where: {
-            id: userId
-        }
+            id: userId,
+        },
     }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
         if (!user) {
             throw new Error('user not found');
@@ -177,7 +194,7 @@ const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             return user.update({
                 active: !user.get('active'),
-                updatedAt: new Date()
+                updatedAt: new Date(),
             }).catch((error) => {
                 throw new Error('user update error');
             });
@@ -193,6 +210,7 @@ exports.default = {
     update,
     password,
     approve,
-    active
+    cancel,
+    active,
 };
 //# sourceMappingURL=UserService.js.map

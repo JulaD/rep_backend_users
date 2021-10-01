@@ -20,13 +20,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
+const sequelize_1 = require("sequelize");
 const index_enum_1 = require("../enums/index.enum");
 const environments = __importStar(require("../config/config"));
-const sequelize_1 = require("sequelize");
 const current = process.env.NODE_ENV || 'development';
-let config = environments[current];
-let sequelize = new sequelize_1.Sequelize(config.database, config.username, config.password, config);
+const config = environments[current];
+const sequelize = new sequelize_1.Sequelize(config.database, config.username, config.password, config);
 class User extends sequelize_1.Model {
+    toJSON() {
+        const values = Object.assign({}, this.get());
+        delete values.password;
+        delete values.updatedAt;
+        delete values.createdBy;
+        delete values.updatedBy;
+        delete values.deletedAt;
+        return values;
+    }
 }
 exports.User = User;
 User.init({
@@ -34,28 +43,44 @@ User.init({
         type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
     },
     name: {
         type: sequelize_1.DataTypes.STRING(255),
-        allowNull: true
+        allowNull: true,
+        validate: {
+            notEmpty: true,
+            len: [3, 40],
+        },
     },
     email: {
         type: sequelize_1.DataTypes.STRING(255),
         allowNull: false,
-        unique: true
+        unique: true,
+        validate: {
+            isEmail: true,
+            max: 60,
+        },
+    },
+    organization: {
+        type: sequelize_1.DataTypes.STRING(255),
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+            max: 50,
+        },
     },
     password: {
         type: sequelize_1.DataTypes.STRING(255),
-        allowNull: false
+        allowNull: false,
     },
     type: {
         type: sequelize_1.DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
     },
     token: {
         type: sequelize_1.DataTypes.STRING(255),
-        allowNull: true
+        allowNull: true,
     },
     status: {
         type: sequelize_1.DataTypes.INTEGER,
@@ -65,39 +90,39 @@ User.init({
                 args: [[
                         String(index_enum_1.status.pending),
                         String(index_enum_1.status.approved),
-                        String(index_enum_1.status.rejected)
+                        String(index_enum_1.status.rejected),
                     ]],
-                msg: 'invalid status'
-            }
-        }
+                msg: 'invalid status',
+            },
+        },
     },
     active: {
         type: sequelize_1.DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true
+        defaultValue: true,
     },
     createdAt: {
         type: sequelize_1.DataTypes.DATE,
-        allowNull: false
+        allowNull: false,
     },
     updatedAt: {
         type: sequelize_1.DataTypes.DATE,
-        allowNull: true
+        allowNull: true,
     },
     createdBy: {
         type: sequelize_1.DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
     },
     updatedBy: {
         type: sequelize_1.DataTypes.INTEGER,
-        allowNull: true
+        allowNull: true,
     },
     deletedAt: {
         type: sequelize_1.DataTypes.DATE,
-        allowNull: true
-    }
+        allowNull: true,
+    },
 }, {
     sequelize,
-    modelName: 'User'
+    modelName: 'User',
 });
 //# sourceMappingURL=users.model.js.map

@@ -6,8 +6,8 @@ exports.development = {
     username: process.env.MYSQL_USERNAME,
     password: process.env.MYSQL_PASSWORD,
     database: process.env.MYSQL_DB,
-    host: "localhost",
-    dialect: "mysql",
-    logging: false
+    host: 'localhost',
+    dialect: 'mysql',
+    logging: false,
 };
 //# sourceMappingURL=config.js.map
