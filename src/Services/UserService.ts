@@ -80,6 +80,84 @@ const listApproved = async (limit: number, offset: number,
   });
 };
 
+const listClients = async (limit: number, offset: number,
+  search: string): Promise<Paginator<User>> => {
+  let options = {};
+  if (limit >= 1 && offset >= 0) {
+    if (search && search !== '') {
+      options = {
+        where: {
+          status: status.approved,
+          type: profiles.client,
+          [Op.or]: [
+            { name: { [Op.substring]: search } },
+            { email: { [Op.substring]: search } },
+          ],
+        },
+        limit,
+        offset,
+      };
+    } else {
+      options = {
+        where: {
+          status: status.approved,
+          type: profiles.client,
+        },
+        limit,
+        offset,
+      };
+    }
+  }
+  return User.findAndCountAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+    ],
+    order: [
+      ['createdAt', 'ASC'],
+    ],
+    ...options,
+  });
+};
+
+const listAdmins = async (limit: number, offset: number,
+  search: string): Promise<Paginator<User>> => {
+  let options = {};
+  if (limit >= 1 && offset >= 0) {
+    if (search && search !== '') {
+      options = {
+        where: {
+          status: status.approved,
+          type: profiles.administrator,
+          [Op.or]: [
+            { name: { [Op.substring]: search } },
+            { email: { [Op.substring]: search } },
+          ],
+        },
+        limit,
+        offset,
+      };
+    } else {
+      options = {
+        where: {
+          status: status.approved,
+          type: profiles.administrator,
+        },
+        limit,
+        offset,
+      };
+    }
+  }
+  return User.findAndCountAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+    ],
+    order: [
+      ['createdAt', 'ASC'],
+    ],
+    ...options,
+  });
+};
+
 const listAll = async (limit: number, offset: number): Promise<Paginator<User>> => {
   let options = {};
   if (limit >= 1 && offset >= 0) {
@@ -231,6 +309,59 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
   } else {
     return user.update({
       status: status.pending,
+      type: profiles.client,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      console.log(error);
+      throw new Error('user update error');
+    });
+  }
+}).catch((error: Error) => {
+  console.log(error);
+  throw new Error('find user error');
+});
+
+const giveAdminPermission = async (userId: number): Promise<User> => User.findOne({
+  attributes: [
+    'id', 'name',
+    'email', 'type',
+    'createdAt',
+  ],
+  where: {
+    id: userId,
+  },
+}).then(async (user: User) => {
+  if (!user) {
+    throw new Error('user not found');
+  } else {
+    return user.update({
+      type: profiles.administrator,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      console.log(error);
+      throw new Error('user update error');
+    });
+  }
+}).catch((error: Error) => {
+  console.log(error);
+  throw new Error('find user error');
+});
+
+const removeAdminPermission = async (userId: number): Promise<User> => User.findOne({
+  attributes: [
+    'id', 'name',
+    'email', 'type',
+    'createdAt',
+  ],
+  where: {
+    id: userId,
+  },
+}).then(async (user: User) => {
+  if (!user) {
+    throw new Error('user not found');
+  } else {
+    return user.update({
+      type: profiles.client,
       updatedAt: new Date(),
     }).catch((error: Error) => {
       console.log(error);
@@ -266,10 +397,14 @@ export default {
   listAll,
   listPending,
   listApproved,
+  listClients,
+  listAdmins,
   create,
   update,
   password,
   approve,
   cancel,
   active,
+  giveAdminPermission,
+  removeAdminPermission,
 };
