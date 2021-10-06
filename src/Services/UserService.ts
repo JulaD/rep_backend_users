@@ -1,13 +1,88 @@
 import bcrypt from 'bcrypt';
+import { Op } from 'sequelize';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
 
 import { UserCreateDTO, UserDTO } from '../DTOs/UserDTO';
 
-const list = async (limit: number, offset: number): Promise<Paginator<User>> => {
+const listPending = async (limit: number, offset: number,
+  search: string): Promise<Paginator<User>> => {
   let options = {};
-  if (limit && offset) {
+  if (limit >= 1 && offset >= 0) {
+    if (search && search !== '') {
+      options = {
+        where: {
+          status: status.pending,
+          [Op.or]: [
+            { name: { [Op.substring]: search } },
+            { email: { [Op.substring]: search } },
+          ],
+        },
+        limit,
+        offset,
+      };
+    } else {
+      options = {
+        where: {
+          status: status.pending,
+        },
+        limit,
+        offset,
+      };
+    }
+  }
+  return User.findAndCountAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+    ],
+    order: [
+      ['createdAt', 'ASC'],
+    ],
+    ...options,
+  });
+};
+
+const listApproved = async (limit: number, offset: number,
+  search: string): Promise<Paginator<User>> => {
+  let options = {};
+  if (limit >= 1 && offset >= 0) {
+    if (search && search !== '') {
+      options = {
+        where: {
+          status: status.approved,
+          [Op.or]: [
+            { name: { [Op.substring]: search } },
+            { email: { [Op.substring]: search } },
+          ],
+        },
+        limit,
+        offset,
+      };
+    } else {
+      options = {
+        where: {
+          status: status.approved,
+        },
+        limit,
+        offset,
+      };
+    }
+  }
+  return User.findAndCountAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+    ],
+    order: [
+      ['createdAt', 'ASC'],
+    ],
+    ...options,
+  });
+};
+
+const listAll = async (limit: number, offset: number): Promise<Paginator<User>> => {
+  let options = {};
+  if (limit >= 1 && offset >= 0) {
     options = {
       limit,
       offset,
@@ -188,7 +263,9 @@ const active = async (userId: number): Promise<User> => User.findOne({
 });
 
 export default {
-  list,
+  listAll,
+  listPending,
+  listApproved,
   create,
   update,
   password,

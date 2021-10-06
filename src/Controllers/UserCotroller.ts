@@ -5,10 +5,32 @@ import UserService from '../Services/UserService';
 
 const router = Router();
 
-const list = async (req: Request, res: Response): Promise<Response> => {
+const listAll = async (req: Request, res: Response): Promise<Response> => {
   try {
     const users: Paginator<User> = await UserService
-      .list(Number(req.query.limit), Number(req.query.offset));
+      .listAll(Number(req.query.limit), Number(req.query.offset));
+    return res.status(200).send(users);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const listPending = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const users: Paginator<User> = await UserService
+      .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+    return res.status(200).send(users);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const listApproved = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const users: Paginator<User> = await UserService
+      .listApproved(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
     return res.status(200).send(users);
   } catch (error) {
     const e = error as Error;
@@ -77,8 +99,14 @@ const active = async (req: Request, res: Response): Promise<Response> => {
 };
 
 router.route('/')
-  .get(list)
+  .get(listAll)
   .post(create);
+
+router.route('/pending')
+  .get(listPending);
+
+router.route('/approved')
+  .get(listApproved);
 
 router.route('/:id')
   .put(update)
