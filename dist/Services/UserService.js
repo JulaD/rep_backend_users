@@ -394,6 +394,34 @@ const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
         throw new Error('find user error');
     });
 });
+const login = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: [
+            'id', 'name', 'email', 'organization', 'password',
+            'type', 'status', 'active', 'createdAt',
+        ],
+        where: {
+            email: userDTO.email,
+            status: index_enum_1.status.approved,
+            active: true,
+        },
+    }).then((user) => {
+        if (!user) {
+            throw new Error('user not found');
+        }
+        else if (user && bcrypt_1.default.compareSync(userDTO.password, String(user.get('password')))) {
+            return user;
+        }
+        else {
+            console.log('auth failed, credentials:', userDTO);
+            throw new Error('auth failed');
+        }
+    }).catch((error) => {
+        console.log(error);
+        console.log('credentials:', userDTO);
+        throw new Error('find user error');
+    });
+});
 exports.default = {
     listAll,
     listPending,
@@ -408,5 +436,6 @@ exports.default = {
     active,
     giveAdminPermission,
     removeAdminPermission,
+    login,
 };
 //# sourceMappingURL=UserService.js.map

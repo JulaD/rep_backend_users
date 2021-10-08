@@ -150,6 +150,16 @@ const active = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ error: e.message });
     }
 });
+const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const logged = yield UserService_1.default.login(req.body);
+        return res.status(200).send(logged);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
 router.route('/')
     .get(listAll)
     .post(create);
@@ -176,5 +186,7 @@ router.route('/:id/admin')
     .put(giveAdminPermission);
 router.route('/:id/client')
     .put(removeAdminPermission);
+router.route('/login')
+    .post(login);
 exports.default = router;
 //# sourceMappingURL=UserCotroller.js.map

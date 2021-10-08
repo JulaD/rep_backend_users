@@ -140,6 +140,16 @@ const active = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const login = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const logged: User = await UserService.login(req.body);
+    return res.status(200).send(logged);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
 router.route('/')
   .get(listAll)
   .post(create);
@@ -177,5 +187,8 @@ router.route('/:id/admin')
 
 router.route('/:id/client')
   .put(removeAdminPermission);
+
+router.route('/login')
+  .post(login);
 
 export default router;

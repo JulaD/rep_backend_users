@@ -4,7 +4,7 @@ import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
 
-import { UserCreateDTO, UserDTO } from '../DTOs/UserDTO';
+import { UserCreateDTO, UserLoginDTO } from '../DTOs/UserDTO';
 
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
@@ -393,6 +393,31 @@ const active = async (userId: number): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
+const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
+  attributes: [
+    'id', 'name', 'email', 'organization', 'password',
+    'type', 'status', 'active', 'createdAt',
+  ],
+  where: {
+    email: userDTO.email,
+    status: status.approved,
+    active: true,
+  },
+}).then((user: User) => {
+  if (!user) {
+    throw new Error('user not found');
+  } else if (user && bcrypt.compareSync(userDTO.password, String(user.get('password')))) {
+    return user;
+  } else {
+    console.log('auth failed, credentials:', userDTO);
+    throw new Error('auth failed');
+  }
+}).catch((error: Error) => {
+  console.log(error);
+  console.log('credentials:', userDTO);
+  throw new Error('find user error');
+});
+
 export default {
   listAll,
   listPending,
@@ -407,4 +432,5 @@ export default {
   active,
   giveAdminPermission,
   removeAdminPermission,
+  login,
 };
