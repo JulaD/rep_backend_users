@@ -13,11 +13,144 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const sequelize_1 = require("sequelize");
 const index_enum_1 = require("../enums/index.enum");
 const users_model_1 = require("../models/users.model");
-const list = (limit, offset) => __awaiter(void 0, void 0, void 0, function* () {
+const listPending = (limit, offset, search) => __awaiter(void 0, void 0, void 0, function* () {
     let options = {};
-    if (limit && offset) {
+    if (limit >= 1 && offset >= 0) {
+        if (search && search !== '') {
+            options = {
+                where: {
+                    status: index_enum_1.status.pending,
+                    [sequelize_1.Op.or]: [
+                        { name: { [sequelize_1.Op.substring]: search } },
+                        { email: { [sequelize_1.Op.substring]: search } },
+                    ],
+                },
+                limit,
+                offset,
+            };
+        }
+        else {
+            options = {
+                where: {
+                    status: index_enum_1.status.pending,
+                },
+                limit,
+                offset,
+            };
+        }
+    }
+    return users_model_1.User.findAndCountAll(Object.assign({ attributes: [
+            'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+        ], order: [
+            ['createdAt', 'ASC'],
+        ] }, options));
+});
+const listApproved = (limit, offset, search) => __awaiter(void 0, void 0, void 0, function* () {
+    let options = {};
+    if (limit >= 1 && offset >= 0) {
+        if (search && search !== '') {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                    [sequelize_1.Op.or]: [
+                        { name: { [sequelize_1.Op.substring]: search } },
+                        { email: { [sequelize_1.Op.substring]: search } },
+                    ],
+                },
+                limit,
+                offset,
+            };
+        }
+        else {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                },
+                limit,
+                offset,
+            };
+        }
+    }
+    return users_model_1.User.findAndCountAll(Object.assign({ attributes: [
+            'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+        ], order: [
+            ['createdAt', 'ASC'],
+        ] }, options));
+});
+const listClients = (limit, offset, search) => __awaiter(void 0, void 0, void 0, function* () {
+    let options = {};
+    if (limit >= 1 && offset >= 0) {
+        if (search && search !== '') {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                    type: index_enum_1.profiles.client,
+                    [sequelize_1.Op.or]: [
+                        { name: { [sequelize_1.Op.substring]: search } },
+                        { email: { [sequelize_1.Op.substring]: search } },
+                    ],
+                },
+                limit,
+                offset,
+            };
+        }
+        else {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                    type: index_enum_1.profiles.client,
+                },
+                limit,
+                offset,
+            };
+        }
+    }
+    return users_model_1.User.findAndCountAll(Object.assign({ attributes: [
+            'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+        ], order: [
+            ['createdAt', 'ASC'],
+        ] }, options));
+});
+const listAdmins = (limit, offset, search) => __awaiter(void 0, void 0, void 0, function* () {
+    let options = {};
+    if (limit >= 1 && offset >= 0) {
+        if (search && search !== '') {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                    type: index_enum_1.profiles.administrator,
+                    [sequelize_1.Op.or]: [
+                        { name: { [sequelize_1.Op.substring]: search } },
+                        { email: { [sequelize_1.Op.substring]: search } },
+                    ],
+                },
+                limit,
+                offset,
+            };
+        }
+        else {
+            options = {
+                where: {
+                    status: index_enum_1.status.approved,
+                    type: index_enum_1.profiles.administrator,
+                },
+                limit,
+                offset,
+            };
+        }
+    }
+    return users_model_1.User.findAndCountAll(Object.assign({ attributes: [
+            'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
+        ], order: [
+            ['createdAt', 'ASC'],
+        ] }, options));
+});
+const listAll = (limit, offset) => __awaiter(void 0, void 0, void 0, function* () {
+    let options = {};
+    if (limit >= 1 && offset >= 0) {
         options = {
             limit,
             offset,
@@ -171,6 +304,63 @@ const cancel = (userId) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             return user.update({
                 status: index_enum_1.status.pending,
+                type: index_enum_1.profiles.client,
+                updatedAt: new Date(),
+            }).catch((error) => {
+                console.log(error);
+                throw new Error('user update error');
+            });
+        }
+    })).catch((error) => {
+        console.log(error);
+        throw new Error('find user error');
+    });
+});
+const giveAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: [
+            'id', 'name',
+            'email', 'type',
+            'createdAt',
+        ],
+        where: {
+            id: userId,
+        },
+    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!user) {
+            throw new Error('user not found');
+        }
+        else {
+            return user.update({
+                type: index_enum_1.profiles.administrator,
+                updatedAt: new Date(),
+            }).catch((error) => {
+                console.log(error);
+                throw new Error('user update error');
+            });
+        }
+    })).catch((error) => {
+        console.log(error);
+        throw new Error('find user error');
+    });
+});
+const removeAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: [
+            'id', 'name',
+            'email', 'type',
+            'createdAt',
+        ],
+        where: {
+            id: userId,
+        },
+    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!user) {
+            throw new Error('user not found');
+        }
+        else {
+            return user.update({
+                type: index_enum_1.profiles.client,
                 updatedAt: new Date(),
             }).catch((error) => {
                 console.log(error);
@@ -205,12 +395,18 @@ const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 exports.default = {
-    list,
+    listAll,
+    listPending,
+    listApproved,
+    listClients,
+    listAdmins,
     create,
     update,
     password,
     approve,
     cancel,
     active,
+    giveAdminPermission,
+    removeAdminPermission,
 };
 //# sourceMappingURL=UserService.js.map

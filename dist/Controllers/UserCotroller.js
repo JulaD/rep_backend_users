@@ -15,10 +15,54 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const UserService_1 = __importDefault(require("../Services/UserService"));
 const router = (0, express_1.Router)();
-const list = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const listAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const users = yield UserService_1.default
-            .list(Number(req.query.limit), Number(req.query.offset));
+            .listAll(Number(req.query.limit), Number(req.query.offset));
+        return res.status(200).send(users);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const listPending = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield UserService_1.default
+            .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+        return res.status(200).send(users);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const listApproved = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield UserService_1.default
+            .listApproved(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+        return res.status(200).send(users);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const listClients = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield UserService_1.default
+            .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+        return res.status(200).send(users);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const listAdmins = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield UserService_1.default
+            .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
         return res.status(200).send(users);
     }
     catch (error) {
@@ -76,6 +120,26 @@ const cancel = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ error: e.message });
     }
 });
+const giveAdminPermission = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield UserService_1.default.giveAdminPermission(Number(req.params.id));
+        return res.status(200).send(user);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const removeAdminPermission = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield UserService_1.default.removeAdminPermission(Number(req.params.id));
+        return res.status(200).send(user);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
 const active = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = yield UserService_1.default.active(Number(req.params.id));
@@ -87,8 +151,16 @@ const active = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 router.route('/')
-    .get(list)
+    .get(listAll)
     .post(create);
+router.route('/pending')
+    .get(listPending);
+router.route('/approved')
+    .get(listApproved);
+router.route('/clients')
+    .get(listClients);
+router.route('/admins')
+    .get(listAdmins);
 router.route('/:id')
     .put(update)
     .patch(active);
@@ -100,5 +172,9 @@ router.route('/:id/active')
     .patch(active);
 router.route('/:id/cancel')
     .put(cancel);
+router.route('/:id/admin')
+    .put(giveAdminPermission);
+router.route('/:id/client')
+    .put(removeAdminPermission);
 exports.default = router;
 //# sourceMappingURL=UserCotroller.js.map
