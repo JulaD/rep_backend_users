@@ -8,3 +8,7 @@ export const development = {
   dialect: 'mysql',
   logging: false,
 };
+
+export const secret = {
+  auth: 'HN$t@2*?mDusFsT!',
+};

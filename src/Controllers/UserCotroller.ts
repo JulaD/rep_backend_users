@@ -1,7 +1,10 @@
 import { Request, Response, Router } from 'express';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/users.model';
 import Paginator from '../interfaces/paginator.interface';
 import UserService from '../Services/UserService';
+import { secret } from '../config/config';
+import { authorized } from '../middlewares/token.middleware';
 
 const router = Router();
 
@@ -143,12 +146,27 @@ const active = async (req: Request, res: Response): Promise<Response> => {
 const login = async (req: Request, res: Response): Promise<Response> => {
   try {
     const logged: User = await UserService.login(req.body);
-    return res.status(200).send(logged);
+    const token = jwt.sign({
+      user: logged.get('id'),
+      role: logged.get('type'),
+    }, secret.auth, {
+      expiresIn: '2d',
+    });
+    return res.status(200).send({
+      token,
+      user: logged,
+    });
   } catch (error) {
+    console.log(error);
     const e = error as Error;
     return res.status(400).json({ error: e.message });
   }
 };
+
+router.route('/login')
+  .post(login);
+
+router.use('/', authorized);
 
 router.route('/')
   .get(listAll)
@@ -187,8 +205,5 @@ router.route('/:id/admin')
 
 router.route('/:id/client')
   .put(removeAdminPermission);
-
-router.route('/login')
-  .post(login);
 
 export default router;

@@ -13,7 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const UserService_1 = __importDefault(require("../Services/UserService"));
+const config_1 = require("../config/config");
+const token_middleware_1 = require("../middlewares/token.middleware");
 const router = (0, express_1.Router)();
 const listAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -153,13 +156,26 @@ const active = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const logged = yield UserService_1.default.login(req.body);
-        return res.status(200).send(logged);
+        const token = jsonwebtoken_1.default.sign({
+            user: logged.get('id'),
+            role: logged.get('type'),
+        }, config_1.secret.auth, {
+            expiresIn: '2d',
+        });
+        return res.status(200).send({
+            token,
+            user: logged,
+        });
     }
     catch (error) {
+        console.log(error);
         const e = error;
         return res.status(400).json({ error: e.message });
     }
 });
+router.route('/login')
+    .post(login);
+router.use('/', token_middleware_1.authorized);
 router.route('/')
     .get(listAll)
     .post(create);
@@ -186,7 +202,5 @@ router.route('/:id/admin')
     .put(giveAdminPermission);
 router.route('/:id/client')
     .put(removeAdminPermission);
-router.route('/login')
-    .post(login);
 exports.default = router;
 //# sourceMappingURL=UserCotroller.js.map
