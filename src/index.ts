@@ -5,6 +5,7 @@ import cors from 'cors';
 import swaggerJsDoc, { Options } from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import Routes from './routes';
+import { User } from './models/users.model';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -41,6 +42,8 @@ app.use(cors({
 app.use(express.raw({
   limit: '50mb',
 }));
+
+User.sync();
 
 app.use(Routes);
 

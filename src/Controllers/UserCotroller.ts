@@ -166,11 +166,13 @@ const login = async (req: Request, res: Response): Promise<Response> => {
 router.route('/login')
   .post(login);
 
+router.route('/')
+  .post(create);
+
 router.use('/', authorized);
 
 router.route('/')
-  .get(listAll)
-  .post(create);
+  .get(listAll);
 
 router.route('/pending')
   .get(listPending);
