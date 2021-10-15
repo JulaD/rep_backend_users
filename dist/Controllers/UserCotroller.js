@@ -175,10 +175,11 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 router.route('/login')
     .post(login);
+router.route('/')
+    .post(create);
 router.use('/', token_middleware_1.authorized);
 router.route('/')
-    .get(listAll)
-    .post(create);
+    .get(listAll);
 router.route('/pending')
     .get(listPending);
 router.route('/approved')
