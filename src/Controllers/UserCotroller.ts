@@ -8,54 +8,31 @@ import { authorized } from '../middlewares/token.middleware';
 
 const router = Router();
 
-const listAll = async (req: Request, res: Response): Promise<Response> => {
+const listUsers = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const users: Paginator<User> = await UserService
-      .listAll(Number(req.query.limit), Number(req.query.offset));
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-const listPending = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const users: Paginator<User> = await UserService
-      .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-const listApproved = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const users: Paginator<User> = await UserService
-      .listApproved(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-const listClients = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const users: Paginator<User> = await UserService
-      .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-const listAdmins = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const users: Paginator<User> = await UserService
-      .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+    let users: Paginator<User>;
+    if (req.query.type !== null) {
+      if (req.query.type === 'pending') {
+        users = await UserService
+          .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+      } else if (req.query.type === 'approved') {
+        users = await UserService
+          .listApproved(
+            Number(req.query.limit), Number(req.query.offset), String(req.query.search),
+          );
+      } else if (req.query.type === 'clients') {
+        users = await UserService
+          .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+      } else if (req.query.type === 'admins') {
+        users = await UserService
+          .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+      } else {
+        return res.status(400).json({ error: 'Invalid type' });
+      }
+    } else {
+      users = await UserService
+        .listAll(Number(req.query.limit), Number(req.query.offset));
+    }
     return res.status(200).send(users);
   } catch (error) {
     const e = error as Error;
@@ -172,19 +149,7 @@ router.route('/')
 router.use('/', authorized);
 
 router.route('/')
-  .get(listAll);
-
-router.route('/pending')
-  .get(listPending);
-
-router.route('/approved')
-  .get(listApproved);
-
-router.route('/clients')
-  .get(listClients);
-
-router.route('/admins')
-  .get(listAdmins);
+  .get(listUsers);
 
 router.route('/:id')
   .put(update)
