@@ -163,6 +163,14 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const checkUser = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    return res.status(200).send(true);
+  } catch (error) {
+    return res.status(400).send(false);
+  }
+};
+
 router.route('/login')
   .post(login);
 
@@ -170,6 +178,9 @@ router.route('/')
   .post(create);
 
 router.use('/', authorized);
+
+router.route('/check-user')
+  .post(checkUser);
 
 router.route('/')
   .get(listAll);

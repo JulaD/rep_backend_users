@@ -173,11 +173,21 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ error: e.message });
     }
 });
+const checkUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return res.status(200).send(true);
+    }
+    catch (error) {
+        return res.status(400).send(false);
+    }
+});
 router.route('/login')
     .post(login);
 router.route('/')
     .post(create);
 router.use('/', token_middleware_1.authorized);
+router.route('/check-user')
+    .post(checkUser);
 router.route('/')
     .get(listAll);
 router.route('/pending')
