@@ -140,11 +140,30 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const validate = async (req: Request, res: Response): Promise<Response> => {
+  const { token } = req.body;
+  if (token) {
+    jwt.verify(token, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+      if (error) {
+        const message = 'Invalid token';
+        return res.status(401).send({ message });
+      }
+      const userId = decoded.id;
+      return res.status(200).send({ userId });
+    });
+  } else {
+    return res.status(400).send('auth token not supplied');
+  }
+  return res.status(500).send();
+};
+
 router.route('/login')
   .post(login);
 
 router.route('/')
   .post(create);
+
+router.validate('/validate', validate);
 
 router.use('/', authorized);
 
