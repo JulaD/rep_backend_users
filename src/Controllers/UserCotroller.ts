@@ -163,7 +163,7 @@ router.route('/login')
 router.route('/')
   .post(create);
 
-router.validate('/validate', validate);
+router.post('/validate', validate);
 
 router.use('/', authorized);
 
