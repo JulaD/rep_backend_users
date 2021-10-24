@@ -175,10 +175,10 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const checkUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return res.status(200).send(true);
+        return res.status(200).send(req.auth);
     }
     catch (error) {
-        return res.status(400).send(false);
+        return res.status(400).send();
     }
 });
 router.route('/login')

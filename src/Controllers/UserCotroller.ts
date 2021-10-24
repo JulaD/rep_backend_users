@@ -163,11 +163,11 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-const checkUser = async (req: Request, res: Response): Promise<Response> => {
+const checkUser = async (req: any, res: Response): Promise<Response> => {
   try {
-    return res.status(200).send(true);
+    return res.status(200).send(req.auth);
   } catch (error) {
-    return res.status(400).send(false);
+    return res.status(400).send();
   }
 };
 
