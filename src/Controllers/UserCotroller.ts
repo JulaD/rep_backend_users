@@ -140,13 +140,24 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const listUsersById = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { userIds } = req.body;
+    const users = await UserService.listUsersById(userIds);
+    return res.status(200).send(users);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
 router.route('/login')
   .post(login);
 
 router.route('/')
   .post(create);
 
-router.use('/', authorized);
+// router.use('/', authorized);
 
 router.route('/')
   .get(listUsers);
@@ -172,5 +183,8 @@ router.route('/:id/admin')
 
 router.route('/:id/client')
   .put(removeAdminPermission);
+
+router.route('/usersById')
+  .post(listUsersById);
 
 export default router;
