@@ -157,7 +157,7 @@ router.route('/login')
 router.route('/')
   .post(create);
 
-// router.use('/', authorized);
+router.use('/', authorized);
 
 router.route('/')
   .get(listUsers);
