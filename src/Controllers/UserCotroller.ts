@@ -143,18 +143,29 @@ const login = async (req: Request, res: Response): Promise<Response> => {
 const validate = async (req: Request, res: Response): Promise<Response> => {
   const { token } = req.body;
   if (token) {
-    jwt.verify(token, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+    jwt.verify(token, secret.auth, (error: Error, decoded: {user: number; role: number}) => {
       if (error) {
         const message = 'Invalid token';
         return res.status(401).send({ message });
       }
-      const userId = decoded.id;
+      const userId = decoded.user;
       return res.status(200).send({ userId });
     });
   } else {
     return res.status(400).send('auth token not supplied');
   }
   return res.status(500).send();
+};
+
+const listUsersById = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { userIds } = req.body;
+    const users = await UserService.listUsersById(userIds);
+    return res.status(200).send(users);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
 };
 
 router.route('/login')
@@ -191,5 +202,8 @@ router.route('/:id/admin')
 
 router.route('/:id/client')
   .put(removeAdminPermission);
+
+router.route('/usersById')
+  .post(listUsersById);
 
 export default router;

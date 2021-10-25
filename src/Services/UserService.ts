@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { Op } from 'sequelize';
+import { Op, where } from 'sequelize';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
@@ -418,6 +418,16 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
+const listUsersById = async (ids: number[]): Promise<User[]> => {
+  const users = User.findAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type',
+    ],
+    where: { id: { [Op.in]: ids } },
+  });
+  return users;
+};
+
 export default {
   listAll,
   listPending,
@@ -433,4 +443,5 @@ export default {
   giveAdminPermission,
   removeAdminPermission,
   login,
+  listUsersById,
 };
