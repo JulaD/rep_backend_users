@@ -418,12 +418,15 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
-const listUsersById = async (ids: number[]): Promise<User[]> => User.findAll({
-  attributes: [
-    'id', 'name', 'email', 'organization', 'type',
-  ],
-  where: { id: { [Op.in]: ids } },
-});
+const listUsersById = async (ids: number[]): Promise<User[]> => {
+  const users = User.findAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type',
+    ],
+    where: { id: { [Op.in]: ids } },
+  });
+  return users;
+};
 
 export default {
   listAll,
