@@ -143,12 +143,12 @@ const login = async (req: Request, res: Response): Promise<Response> => {
 const validate = async (req: Request, res: Response): Promise<Response> => {
   const { token } = req.body;
   if (token) {
-    jwt.verify(token, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+    jwt.verify(token, secret.auth, (error: Error, decoded: {user: number; role: number}) => {
       if (error) {
         const message = 'Invalid token';
         return res.status(401).send({ message });
       }
-      const userId = decoded.id;
+      const userId = decoded.user;
       return res.status(200).send({ userId });
     });
   } else {
