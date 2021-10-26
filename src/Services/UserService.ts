@@ -220,7 +220,7 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
 }).then(async (user: User) => {
   if (!user) {
     throw new Error('user not found');
-  } else if (userDTO.password.length > 6) {
+  } else if (userDTO.password.length >= 6) {
     if (userDTO.password === userDTO.repeat) {
       return user.update({
         name: userDTO.name,
@@ -413,7 +413,6 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   } else if (user && bcrypt.compareSync(userDTO.password, String(user.get('password')))) {
     return user;
   } else {
-    console.log('auth failed, credentials:', userDTO);
     throw new Error('auth failed');
   }
 }).catch((error: Error) => {
