@@ -210,15 +210,25 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
             throw new Error('user not found');
         }
         else {
-            const emailUser = yield users_model_1.User.findOne({
-                where: {
-                    email: userDTO.email,
-                },
-            });
-            if (!emailUser || emailUser.get('id') === user.get('id')) {
+            if (userDTO.password.length > 6) {
+                if (userDTO.password === userDTO.repeat) {
+                    return user.update({
+                        name: userDTO.name,
+                        organization: userDTO.organization,
+                        password: bcrypt_1.default.hashSync(userDTO.password, 10),
+                        updatedAt: new Date(),
+                    }).catch((error) => {
+                        console.log(error);
+                        throw new Error('user update error');
+                    });
+                }
+                else {
+                    throw new Error('passwords dont match');
+                }
+            }
+            else {
                 return user.update({
                     name: userDTO.name,
-                    email: userDTO.email,
                     organization: userDTO.organization,
                     updatedAt: new Date(),
                 }).catch((error) => {
@@ -226,7 +236,6 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
                     throw new Error('user update error');
                 });
             }
-            throw new Error('email in use');
         }
     })).catch((error) => {
         console.log(error);
@@ -418,8 +427,25 @@ const login = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
         }
     }).catch((error) => {
         console.log(error);
-        console.log('credentials:', userDTO);
         throw new Error('find user error');
+    });
+});
+const listUsersById = (ids) => __awaiter(void 0, void 0, void 0, function* () {
+    const users = users_model_1.User.findAll({
+        attributes: [
+            'id', 'name', 'email', 'organization', 'type',
+        ],
+        where: { id: { [sequelize_1.Op.in]: ids } },
+    });
+    return users;
+});
+const getUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: ['id', 'name', 'organization'],
+        where: {
+            id,
+            deletedAt: null
+        }
     });
 });
 exports.default = {
@@ -437,5 +463,7 @@ exports.default = {
     giveAdminPermission,
     removeAdminPermission,
     login,
+    listUsersById,
+    getUser,
 };
 //# sourceMappingURL=UserService.js.map

@@ -134,7 +134,6 @@ const login = async (req: Request, res: Response): Promise<Response> => {
       user: logged,
     });
   } catch (error) {
-    console.log(error);
     const e = error as Error;
     return res.status(400).json({ error: e.message });
   }
@@ -176,6 +175,17 @@ const listUsersById = async (req: Request, res: Response): Promise<Response> => 
   }
 };
 
+const getUser = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = Number(req.params.id);
+    const user: User = await UserService.getUser(userId);
+    return res.status(200).send(user);
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
 router.route('/login')
   .post(login);
 
@@ -193,6 +203,7 @@ router.route('/')
   .get(listUsers);
 
 router.route('/:id')
+  .get(getUser)
   .put(update)
   .patch(active);
 

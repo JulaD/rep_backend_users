@@ -18,54 +18,34 @@ const UserService_1 = __importDefault(require("../Services/UserService"));
 const config_1 = require("../config/config");
 const token_middleware_1 = require("../middlewares/token.middleware");
 const router = (0, express_1.Router)();
-const listAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const listUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const users = yield UserService_1.default
-            .listAll(Number(req.query.limit), Number(req.query.offset));
-        return res.status(200).send(users);
-    }
-    catch (error) {
-        const e = error;
-        return res.status(400).json({ error: e.message });
-    }
-});
-const listPending = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const users = yield UserService_1.default
-            .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-        return res.status(200).send(users);
-    }
-    catch (error) {
-        const e = error;
-        return res.status(400).json({ error: e.message });
-    }
-});
-const listApproved = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const users = yield UserService_1.default
-            .listApproved(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-        return res.status(200).send(users);
-    }
-    catch (error) {
-        const e = error;
-        return res.status(400).json({ error: e.message });
-    }
-});
-const listClients = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const users = yield UserService_1.default
-            .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-        return res.status(200).send(users);
-    }
-    catch (error) {
-        const e = error;
-        return res.status(400).json({ error: e.message });
-    }
-});
-const listAdmins = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const users = yield UserService_1.default
-            .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+        let users;
+        if (req.query.type !== null) {
+            if (req.query.type === 'pending') {
+                users = yield UserService_1.default
+                    .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+            }
+            else if (req.query.type === 'approved') {
+                users = yield UserService_1.default
+                    .listApproved(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+            }
+            else if (req.query.type === 'clients') {
+                users = yield UserService_1.default
+                    .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+            }
+            else if (req.query.type === 'admins') {
+                users = yield UserService_1.default
+                    .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+            }
+            else {
+                return res.status(400).json({ error: 'Invalid type' });
+            }
+        }
+        else {
+            users = yield UserService_1.default
+                .listAll(Number(req.query.limit), Number(req.query.offset));
+        }
         return res.status(200).send(users);
     }
     catch (error) {
@@ -168,7 +148,6 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
     }
     catch (error) {
-        console.log(error);
         const e = error;
         return res.status(400).json({ error: e.message });
     }
@@ -181,24 +160,57 @@ const checkUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).send();
     }
 });
+const validate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { token } = req.body;
+    if (token) {
+        jsonwebtoken_1.default.verify(token, config_1.secret.auth, (error, decoded) => {
+            if (error) {
+                const message = 'Invalid token';
+                return res.status(401).send({ message });
+            }
+            const userId = decoded.user;
+            return res.status(200).send({ userId });
+        });
+    }
+    else {
+        return res.status(400).send('auth token not supplied');
+    }
+    return res.status(500).send();
+});
+const listUsersById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userIds } = req.body;
+        const users = yield UserService_1.default.listUsersById(userIds);
+        return res.status(200).send(users);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
+const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = Number(req.params.id);
+        const user = yield UserService_1.default.getUser(userId);
+        return res.status(200).send(user);
+    }
+    catch (error) {
+        const e = error;
+        return res.status(400).json({ error: e.message });
+    }
+});
 router.route('/login')
     .post(login);
 router.route('/')
     .post(create);
+router.post('/validate', validate);
 router.use('/', token_middleware_1.authorized);
 router.route('/check-user')
     .post(checkUser);
 router.route('/')
-    .get(listAll);
-router.route('/pending')
-    .get(listPending);
-router.route('/approved')
-    .get(listApproved);
-router.route('/clients')
-    .get(listClients);
-router.route('/admins')
-    .get(listAdmins);
+    .get(listUsers);
 router.route('/:id')
+    .get(getUser)
     .put(update)
     .patch(active);
 router.route('/:id/password')
@@ -213,5 +225,7 @@ router.route('/:id/admin')
     .put(giveAdminPermission);
 router.route('/:id/client')
     .put(removeAdminPermission);
+router.route('/usersById')
+    .post(listUsersById);
 exports.default = router;
 //# sourceMappingURL=UserCotroller.js.map

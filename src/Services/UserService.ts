@@ -4,7 +4,7 @@ import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
 
-import { UserCreateDTO, UserLoginDTO } from '../DTOs/UserDTO';
+import { UserCreateDTO, UserLoginDTO, UserUpdateDTO } from '../DTOs/UserDTO';
 
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
@@ -210,7 +210,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   throw error;
 });
 
-const update = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
+const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => User.findOne({
   attributes: [
     'id', 'name', 'email',
   ],
@@ -220,24 +220,28 @@ const update = async (userId: number, userDTO: UserCreateDTO): Promise<User> => 
 }).then(async (user: User) => {
   if (!user) {
     throw new Error('user not found');
-  } else {
-    const emailUser: User = await User.findOne({
-      where: {
-        email: userDTO.email,
-      },
-    });
-    if (!emailUser || emailUser.get('id') === user.get('id')) {
+  } else if (userDTO.password.length > 6) {
+    if (userDTO.password === userDTO.repeat) {
       return user.update({
         name: userDTO.name,
-        email: userDTO.email,
         organization: userDTO.organization,
+        password: bcrypt.hashSync(userDTO.password, 10),
         updatedAt: new Date(),
       }).catch((error: Error) => {
         console.log(error);
         throw new Error('user update error');
       });
     }
-    throw new Error('email in use');
+    throw new Error('passwords dont match');
+  } else {
+    return user.update({
+      name: userDTO.name,
+      organization: userDTO.organization,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      console.log(error);
+      throw new Error('user update error');
+    });
   }
 }).catch((error: Error) => {
   console.log(error);
@@ -414,7 +418,6 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   }
 }).catch((error: Error) => {
   console.log(error);
-  console.log('credentials:', userDTO);
   throw new Error('find user error');
 });
 
@@ -427,6 +430,14 @@ const listUsersById = async (ids: number[]): Promise<User[]> => {
   });
   return users;
 };
+
+const getUser = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization'],
+  where: {
+    id,
+    deletedAt: null,
+  },
+});
 
 export default {
   listAll,
@@ -444,4 +455,5 @@ export default {
   removeAdminPermission,
   login,
   listUsersById,
+  getUser,
 };

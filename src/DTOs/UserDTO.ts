@@ -5,6 +5,13 @@ export interface UserCreateDTO {
   password: string;
 }
 
+export interface UserUpdateDTO {
+  name: string;
+  organization: string;
+  password: string;
+  repeat: string;
+}
+
 export interface UserLoginDTO {
   email: string;
   password: string;
