@@ -220,7 +220,7 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
 }).then(async (user: User) => {
   if (!user) {
     throw new Error('user not found');
-  } else if (userDTO.password.length >= 6) {
+  } else if (userDTO.password && userDTO.password.length >= 6) {
     if (userDTO.password === userDTO.repeat) {
       return user.update({
         name: userDTO.name,

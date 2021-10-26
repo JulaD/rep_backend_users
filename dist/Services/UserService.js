@@ -209,33 +209,29 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
         if (!user) {
             throw new Error('user not found');
         }
-        else {
-            if (userDTO.password.length > 6) {
-                if (userDTO.password === userDTO.repeat) {
-                    return user.update({
-                        name: userDTO.name,
-                        organization: userDTO.organization,
-                        password: bcrypt_1.default.hashSync(userDTO.password, 10),
-                        updatedAt: new Date(),
-                    }).catch((error) => {
-                        console.log(error);
-                        throw new Error('user update error');
-                    });
-                }
-                else {
-                    throw new Error('passwords dont match');
-                }
-            }
-            else {
+        else if (userDTO.password && userDTO.password.length >= 6) {
+            if (userDTO.password === userDTO.repeat) {
                 return user.update({
                     name: userDTO.name,
                     organization: userDTO.organization,
+                    password: bcrypt_1.default.hashSync(userDTO.password, 10),
                     updatedAt: new Date(),
                 }).catch((error) => {
                     console.log(error);
                     throw new Error('user update error');
                 });
             }
+            throw new Error('passwords dont match');
+        }
+        else {
+            return user.update({
+                name: userDTO.name,
+                organization: userDTO.organization,
+                updatedAt: new Date(),
+            }).catch((error) => {
+                console.log(error);
+                throw new Error('user update error');
+            });
         }
     })).catch((error) => {
         console.log(error);
@@ -422,7 +418,6 @@ const login = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
             return user;
         }
         else {
-            console.log('auth failed, credentials:', userDTO);
             throw new Error('auth failed');
         }
     }).catch((error) => {
@@ -444,8 +439,8 @@ const getUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
         attributes: ['id', 'name', 'organization'],
         where: {
             id,
-            deletedAt: null
-        }
+            deletedAt: null,
+        },
     });
 });
 exports.default = {
