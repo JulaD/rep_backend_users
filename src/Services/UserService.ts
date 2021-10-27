@@ -1,10 +1,12 @@
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
+import jwt from 'jsonwebtoken';
+import { secret } from '../config/config';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
-
 import { UserCreateDTO, UserLoginDTO } from '../DTOs/UserDTO';
+import MailerService from './MailerService';
 
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
@@ -200,7 +202,17 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         console.log(error);
         throw new Error('create user error');
       });
+      const tkn = jwt.sign({
+        user: newUser.toJSON().id,
+        email: newUser.toJSON().email,
+      }, secret.auth, {
+        expiresIn: '2d',
+      });
+      newUser.token = tkn;
+      newUser.save();
+      MailerService.sendEmail(tkn);
       newUser.toJSON();
+
       return newUser;
     }
     throw new Error('password too short');

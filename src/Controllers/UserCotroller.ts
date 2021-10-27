@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
+import MailerService from '../Services/MailerService';
 import { User } from '../models/users.model';
 import Paginator from '../interfaces/paginator.interface';
 import UserService from '../Services/UserService';
@@ -140,13 +141,18 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const sendEmail = (req: Request, res: Response) => {
+  const html = MailerService.sendEmail('wot');
+  return res.status(200).send(html);
+};
+
 router.route('/login')
   .post(login);
 
 router.route('/')
   .post(create);
 
-router.use('/', authorized);
+// router.use('/', authorized);
 
 router.route('/')
   .get(listUsers);
@@ -172,5 +178,8 @@ router.route('/:id/admin')
 
 router.route('/:id/client')
   .put(removeAdminPermission);
+
+router.route('/mail')
+  .get(sendEmail);
 
 export default router;

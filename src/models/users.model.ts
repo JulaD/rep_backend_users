@@ -10,6 +10,8 @@ const sequelize: Sequelize = new Sequelize(
 );
 
 export class User extends Model {
+  token: string;
+
   toJSON(): UserDTO {
     const values = { ...this.get() };
 
