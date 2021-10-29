@@ -404,20 +404,19 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   ],
   where: {
     email: userDTO.email,
-    status: status.approved,
-    active: true,
   },
 }).then((user: User) => {
   if (!user) {
     throw new Error('user not found');
+  } else if (user.get('status') === status.pending || user.get('active') === false) {
+    throw new Error('user not accepted');
   } else if (user && bcrypt.compareSync(userDTO.password, String(user.get('password')))) {
     return user;
   } else {
     throw new Error('auth failed');
   }
 }).catch((error: Error) => {
-  console.log(error);
-  throw new Error('find user error');
+  throw error;
 });
 
 const listUsersById = async (ids: number[]): Promise<User[]> => {
