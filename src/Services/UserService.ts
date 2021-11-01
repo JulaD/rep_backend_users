@@ -183,7 +183,8 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   },
 }).then(async (user: User) => {
   if (user) {
-    throw new Error('email is taken');
+    // email is taken
+    throw new Error('412');
   } else {
     // se hace el checkeo antes porque luego se encripta
     if (userDTO.password.length >= 6) {
@@ -198,12 +199,14 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         createdAt: new Date(),
       }).catch((error: Error) => {
         console.log(error);
-        throw new Error('create user error');
+        // create user error
+        throw new Error('500');
       });
       newUser.toJSON();
       return newUser;
     }
-    throw new Error('password too short');
+    // password too short
+    throw new Error('400');
   }
 }).catch((error: Error) => {
   console.log(error);
@@ -404,20 +407,22 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   ],
   where: {
     email: userDTO.email,
-    status: status.approved,
-    active: true,
   },
 }).then((user: User) => {
   if (!user) {
-    throw new Error('user not found');
+    // user nor found
+    throw new Error('404');
+  } else if (user.get('status') === status.pending || user.get('active') === false) {
+    // unauthorized
+    throw new Error('401');
   } else if (user && bcrypt.compareSync(userDTO.password, String(user.get('password')))) {
     return user;
   } else {
-    throw new Error('auth failed');
+    // generic error
+    throw new Error('400');
   }
 }).catch((error: Error) => {
-  console.log(error);
-  throw new Error('find user error');
+  throw error;
 });
 
 const listUsersById = async (ids: number[]): Promise<User[]> => {
