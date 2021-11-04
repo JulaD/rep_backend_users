@@ -245,6 +245,20 @@ const sendEmail = async (req: Request, res: Response) => {
   }
 };
 
+const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.query.token);
+    if (token) {
+      await UserService.activeEmail(token);
+    } else {
+      throw new Error('Cannot parse token');
+    }
+    return res.status(200).send({ message: 'User email verified.' });
+  } catch (error) {
+    return res.status(500).send({ error: error.message });
+  }
+};
+
 router.route('/login')
   .post(login);
 
@@ -286,6 +300,8 @@ router.route('/:id/client')
 
 router.route('/usersById')
   .post(listUsersById);
+
+router.route('/verifyEmail').put(verifyEmail);
 
 router.route('/mail')
   .get(sendEmail);

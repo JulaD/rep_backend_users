@@ -5,10 +5,10 @@ import { secret } from '../config/config';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
-import { UserCreateDTO, UserDTO, UserLoginDTO } from '../DTOs/UserDTO';
+import {
+  UserCreateDTO, UserDTO, UserLoginDTO, UserUpdateDTO,
+} from '../DTOs/UserDTO';
 import MailerService from './MailerService';
-
-import { UserCreateDTO, UserLoginDTO, UserUpdateDTO } from '../DTOs/UserDTO';
 
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
@@ -418,18 +418,6 @@ const active = async (userId: number): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
-const activeEmail = async (userToken: string): Promise<void> => {
-  let id: number;
-  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
-    if (error) {
-      const e = error as Error;
-      throw e;
-    } else {
-      id = decoded.id;
-    }
-  });
-};
-
 const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   attributes: [
     'id', 'name', 'email', 'organization', 'password',
@@ -472,6 +460,27 @@ const getUser = async (id: number): Promise<User> => User.findOne({
     deletedAt: null,
   },
 });
+
+const activeEmail = async (userToken: string): Promise<void> => {
+  let id: number;
+  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+    if (error) {
+      const e = error as Error;
+      throw e;
+    } else {
+      id = decoded.id;
+    }
+  });
+  const user: User = await getUser(id);
+  if (user.token === userToken) {
+    user.update({
+      active: true,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      throw new Error('user update error');
+    });
+  }
+};
 
 const resendVerifyEmail = async (emailAddress: string) => {
   const user = await User.findOne({ where: { email: emailAddress } });
@@ -516,4 +525,5 @@ export default {
   getUser,
   resendVerifyEmail,
   recoverPassword,
+  activeEmail,
 };
