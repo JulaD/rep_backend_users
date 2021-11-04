@@ -4,6 +4,10 @@ import path from 'path';
 import cheerio from 'cheerio';
 import { html } from 'cheerio/lib/static';
 
+const legit = require('legit');
+const EmailValidator = require('email-deep-validator');
+
+// nodemailer transporter initialization
 const transporter: Transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -14,17 +18,30 @@ const transporter: Transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify().then(() => {
-  console.log('Ready to send emails');
-});
+const checkMailAddress = async (email: string): Promise<boolean> => {
+  // const emailValidator = new EmailValidator();
 
-const sendEmail = (token: string): string => {
-  const pathToFile = path.join(__dirname, '../../email.html');
+  let exists = false;
+  await legit(email).then((result: any) => {
+    exists = result.isValid;
+  }).catch((error: Error) => {
+    throw new Error(error.message);
+  });
+
+  return exists;
+  // const { wellFormed, validDomain, validMailbox } = await emailValidator.verify(email);
+
+  // return wellFormed && validDomain && validMailbox;
+};
+
+const sendVerifyEmail = (email: string, token: string): void => {
+  // build html with token link to verify th email
+  const pathToFile = path.join(__dirname, '../../verifyEmail.html');
   let body: string = fs.readFileSync(pathToFile, 'utf8').toString();
   const htmlToSend = cheerio.load(body);
   htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
-    const url = `http://localhost:4200/${token}`;
+    const url = `http://localhost:4200/?token=${token}`;
     if (old_url === 'PutYourLinkHere') {
       htmlToSend(value).attr('href', url);
     }
@@ -32,12 +49,14 @@ const sendEmail = (token: string): string => {
       htmlToSend(value).text(url);
     }
   });
+
+  // email message
   body = htmlToSend.html();
   const pathToImage = path.join(__dirname, '../../logoEscuelaNutricion.png');
   const message = {
-    from: '"te mamaste" <agusruizdiazcambon@gmail.com>',
-    to: 'agusruizdiazcambon@hotmail.com',
-    subject: 'LOL',
+    from: '"REP" <agusruizdiazcambon@gmail.com>',
+    to: email,
+    subject: 'Verifique su email',
     attachments: [{
       filename: 'logoEscuelaNutricion.png',
       path: pathToImage,
@@ -46,7 +65,16 @@ const sendEmail = (token: string): string => {
     html: body,
   };
   transporter.sendMail(message);
-  return body;
 };
 
-export default { sendEmail };
+const sendRecoverEmail = (email: string, token: string): void => {
+
+};
+
+const sendApprovedEmail = (email: string): void => {
+
+};
+
+export default {
+  checkMailAddress, sendVerifyEmail, sendRecoverEmail, sendApprovedEmail,
+};

@@ -1,11 +1,11 @@
 import bcrypt from 'bcrypt';
-import { Op } from 'sequelize';
+import { Op, where } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import { secret } from '../config/config';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
-import { UserCreateDTO, UserLoginDTO } from '../DTOs/UserDTO';
+import { UserCreateDTO, UserDTO, UserLoginDTO } from '../DTOs/UserDTO';
 import MailerService from './MailerService';
 
 const listPending = async (limit: number, offset: number,
@@ -187,6 +187,9 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   if (user) {
     throw new Error('email is taken');
   } else {
+    if (!MailerService.checkMailAddress(userDTO.email)) {
+      throw new Error('Invalid email address');
+    }
     // se hace el checkeo antes porque luego se encripta
     if (userDTO.password.length >= 6) {
       const newUser: User = await User.create({
@@ -198,6 +201,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         status: status.pending,
         createdBy: 1,
         createdAt: new Date(),
+        active: false,
       }).catch((error: Error) => {
         console.log(error);
         throw new Error('create user error');
@@ -210,7 +214,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
       });
       newUser.token = tkn;
       newUser.save();
-      MailerService.sendEmail(tkn);
+      MailerService.sendVerifyEmail(userDTO.email, tkn);
       newUser.toJSON();
 
       return newUser;
@@ -405,6 +409,18 @@ const active = async (userId: number): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
+const activeEmail = async (userToken: string): Promise<void> => {
+  let id: number;
+  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+    if (error) {
+      const e = error as Error;
+      throw e;
+    } else {
+      id = decoded.id;
+    }
+  });
+};
+
 const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   attributes: [
     'id', 'name', 'email', 'organization', 'password',
@@ -430,6 +446,30 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   throw new Error('find user error');
 });
 
+const resendVerifyEmail = async (emailAddress: string) => {
+  const user = await User.findOne({ where: { email: emailAddress } });
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (userDTO.active) {
+    throw new Error('Su cuenta ya ha sido verificada');
+  }
+  MailerService.sendVerifyEmail(userDTO.email, user.token);
+};
+
+const recoverPassword = async (emailAddress: string): Promise<void> => {
+  const user = await User.findOne({ where: { email: emailAddress } });
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (!userDTO.active) {
+    throw new Error('Su cuenta no ha sido verificada');
+  }
+  MailerService.sendRecoverEmail(userDTO.email, user.token);
+};
+
 export default {
   listAll,
   listPending,
@@ -445,4 +485,6 @@ export default {
   giveAdminPermission,
   removeAdminPermission,
   login,
+  resendVerifyEmail,
+  recoverPassword,
 };

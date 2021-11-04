@@ -7,6 +7,8 @@ import UserService from '../Services/UserService';
 import { secret } from '../config/config';
 import { authorized } from '../middlewares/token.middleware';
 
+const legit = require('legit');
+
 const router = Router();
 
 const listUsers = async (req: Request, res: Response): Promise<Response> => {
@@ -74,6 +76,7 @@ const password = async (req: Request, res: Response): Promise<Response> => {
 const approve = async (req: Request, res: Response): Promise<Response> => {
   try {
     const user: User = await UserService.approve(Number(req.params.id));
+    MailerService.sendApprovedEmail(user.toJSON().email);
     return res.status(200).send(user);
   } catch (error) {
     const e = error as Error;
@@ -141,9 +144,44 @@ const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-const sendEmail = (req: Request, res: Response) => {
-  const html = MailerService.sendEmail('wot');
-  return res.status(200).send(html);
+const resendVerifyEmail = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+    await UserService.resendVerifyEmail(email);
+    return res.status(200).send({ message: 'Se ha enviado un mail de verificacion su correo' });
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const recoverPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+    UserService.recoverPassword(email);
+    return res.status(200).send({ message: 'Se ha enviado a su email un mensaje para recuperar la contraseña' });
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const sendEmail = async (req: Request, res: Response) => {
+  try {
+    /* let exists = false;
+    await legit('agusruizdiazcambon@hotmail.com').then((result: any) => {
+      exists = result.isValid;
+    }).catch((error: Error) => {
+      throw new Error(error.message);
+    }); */
+    const exists: boolean = await MailerService.checkMailAddress('agustin.ruiz.diaz@fing.edu.uy');
+    if (!exists) {
+      return res.status(500).send({ nop: 'no existe capo' });
+    }
+    return res.status(200).send({ lpm: 'lpm' });
+  } catch (error) {
+    return res.status(500).send({ error: error.message });
+  }
 };
 
 router.route('/login')
