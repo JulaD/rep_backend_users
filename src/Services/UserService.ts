@@ -8,6 +8,8 @@ import { User } from '../models/users.model';
 import { UserCreateDTO, UserDTO, UserLoginDTO } from '../DTOs/UserDTO';
 import MailerService from './MailerService';
 
+import { UserCreateDTO, UserLoginDTO, UserUpdateDTO } from '../DTOs/UserDTO';
+
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
   let options = {};
@@ -185,7 +187,8 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   },
 }).then(async (user: User) => {
   if (user) {
-    throw new Error('email is taken');
+    // email is taken
+    throw new Error('412');
   } else {
     if (!MailerService.checkMailAddress(userDTO.email)) {
       throw new Error('Invalid email address');
@@ -204,7 +207,8 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         active: false,
       }).catch((error: Error) => {
         console.log(error);
-        throw new Error('create user error');
+        // create user error
+        throw new Error('500');
       });
       const tkn = jwt.sign({
         user: newUser.toJSON().id,
@@ -219,14 +223,15 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
 
       return newUser;
     }
-    throw new Error('password too short');
+    // password too short
+    throw new Error('400');
   }
 }).catch((error: Error) => {
   console.log(error);
   throw error;
 });
 
-const update = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
+const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => User.findOne({
   attributes: [
     'id', 'name', 'email',
   ],
@@ -236,24 +241,28 @@ const update = async (userId: number, userDTO: UserCreateDTO): Promise<User> => 
 }).then(async (user: User) => {
   if (!user) {
     throw new Error('user not found');
-  } else {
-    const emailUser: User = await User.findOne({
-      where: {
-        email: userDTO.email,
-      },
-    });
-    if (!emailUser || emailUser.get('id') === user.get('id')) {
+  } else if (userDTO.password && userDTO.password.length >= 6) {
+    if (userDTO.password === userDTO.repeat) {
       return user.update({
         name: userDTO.name,
-        email: userDTO.email,
         organization: userDTO.organization,
+        password: bcrypt.hashSync(userDTO.password, 10),
         updatedAt: new Date(),
       }).catch((error: Error) => {
         console.log(error);
         throw new Error('user update error');
       });
     }
-    throw new Error('email in use');
+    throw new Error('passwords dont match');
+  } else {
+    return user.update({
+      name: userDTO.name,
+      organization: userDTO.organization,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      console.log(error);
+      throw new Error('user update error');
+    });
   }
 }).catch((error: Error) => {
   console.log(error);
@@ -428,22 +437,40 @@ const login = async (userDTO: UserLoginDTO): Promise<User> => User.findOne({
   ],
   where: {
     email: userDTO.email,
-    status: status.approved,
-    active: true,
   },
 }).then((user: User) => {
   if (!user) {
-    throw new Error('user not found');
+    // user nor found
+    throw new Error('404');
+  } else if (user.get('status') === status.pending || user.get('active') === false) {
+    // unauthorized
+    throw new Error('401');
   } else if (user && bcrypt.compareSync(userDTO.password, String(user.get('password')))) {
     return user;
   } else {
-    console.log('auth failed, credentials:', userDTO);
-    throw new Error('auth failed');
+    // generic error
+    throw new Error('400');
   }
 }).catch((error: Error) => {
-  console.log(error);
-  console.log('credentials:', userDTO);
-  throw new Error('find user error');
+  throw error;
+});
+
+const listUsersById = async (ids: number[]): Promise<User[]> => {
+  const users = User.findAll({
+    attributes: [
+      'id', 'name', 'email', 'organization', 'type',
+    ],
+    where: { id: { [Op.in]: ids } },
+  });
+  return users;
+};
+
+const getUser = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization'],
+  where: {
+    id,
+    deletedAt: null,
+  },
 });
 
 const resendVerifyEmail = async (emailAddress: string) => {
@@ -485,6 +512,8 @@ export default {
   giveAdminPermission,
   removeAdminPermission,
   login,
+  listUsersById,
+  getUser,
   resendVerifyEmail,
   recoverPassword,
 };
