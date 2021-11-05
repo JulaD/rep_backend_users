@@ -5,7 +5,6 @@ import cheerio from 'cheerio';
 import { html } from 'cheerio/lib/static';
 
 const legit = require('legit');
-const EmailValidator = require('email-deep-validator');
 
 // nodemailer transporter initialization
 const transporter: Transporter = nodemailer.createTransport({
@@ -89,7 +88,7 @@ const sendRecoverEmail = (email: string, token: string): void => {
   const message = {
     from: '"REP" <agusruizdiazcambon@gmail.com>',
     to: email,
-    subject: 'Verifique su email',
+    subject: 'Recupere su contraseña',
     attachments: [{
       filename: 'logoEscuelaNutricion.png',
       path: pathToImage,
@@ -111,7 +110,7 @@ const sendApprovedEmail = (email: string): void => {
   const message = {
     from: '"REP" <agusruizdiazcambon@gmail.com>',
     to: email,
-    subject: 'Verifique su email',
+    subject: '¡Cuenta aprobada!',
     attachments: [{
       filename: 'logoEscuelaNutricion.png',
       path: pathToImage,

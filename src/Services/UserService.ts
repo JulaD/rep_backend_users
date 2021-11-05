@@ -211,13 +211,13 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         throw new Error('500');
       });
       const tkn = jwt.sign({
-        user: newUser.toJSON().id,
+        id: newUser.toJSON().id,
         email: newUser.toJSON().email,
       }, secret.auth, {
         expiresIn: '2d',
       });
       newUser.token = tkn;
-      newUser.save();
+      await newUser.save();
       MailerService.sendVerifyEmail(userDTO.email, tkn);
       newUser.toJSON();
 
@@ -269,29 +269,29 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
   throw new Error('find user error');
 });
 
-const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
-  attributes: [
-    'id', 'name', 'email',
-  ],
-  where: {
-    id: userId,
-  },
-}).then(async (user: User) => {
-  if (!user) {
-    throw new Error('user not found');
-  } else {
-    return user.update({
-      password: bcrypt.hashSync(userDTO.password, 10),
-      updatedAt: new Date(),
-    }).catch((error: Error) => {
-      console.log(error);
-      throw new Error('user update error');
-    });
-  }
-}).catch((error: Error) => {
-  console.log(error);
-  throw new Error('find user error');
-});
+// const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
+//   attributes: [
+//     'id', 'name', 'email',
+//   ],
+//   where: {
+//     id: userId,
+//   },
+// }).then(async (user: User) => {
+//   if (!user) {
+//     throw new Error('user not found');
+//   } else {
+//     return user.update({
+//       password: bcrypt.hashSync(userDTO.password, 10),
+//       updatedAt: new Date(),
+//     }).catch((error: Error) => {
+//       console.log(error);
+//       throw new Error('user update error');
+//     });
+//   }
+// }).catch((error: Error) => {
+//   console.log(error);
+//   throw new Error('find user error');
+// });
 
 const approve = async (userId: number): Promise<User> => User.findOne({
   attributes: [
@@ -461,9 +461,17 @@ const getUser = async (id: number): Promise<User> => User.findOne({
   },
 });
 
+const getUserWithToken = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization', 'token'],
+  where: {
+    id,
+    deletedAt: null,
+  },
+});
+
 const activeEmail = async (userToken: string): Promise<void> => {
   let id: number;
-  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; type: number}) => {
+  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; email: string}) => {
     if (error) {
       const e = error as Error;
       throw e;
@@ -471,7 +479,7 @@ const activeEmail = async (userToken: string): Promise<void> => {
       id = decoded.id;
     }
   });
-  const user: User = await getUser(id);
+  const user: User = await getUserWithToken(id);
   if (user.token === userToken) {
     user.update({
       active: true,
@@ -506,6 +514,35 @@ const recoverPassword = async (emailAddress: string): Promise<void> => {
   MailerService.sendRecoverEmail(userDTO.email, user.token);
 };
 
+const updatePassword = async (token: string, userPassword: string): Promise<void> => {
+  let idUser: number;
+  jwt.verify(token, secret.auth, (error: Error, decoded: {id: number; email: string}) => {
+    if (error) {
+      const e = error as Error;
+      throw e;
+    } else {
+      idUser = decoded.id;
+    }
+  });
+  const user = await User.findOne({ where: { id: idUser } });
+  user.update({
+    password: bcrypt.hashSync(userPassword, 10),
+    updatedAt: new Date(),
+  }).catch((error: Error) => {
+    console.log(error);
+    throw new Error('user update error');
+  });
+
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (!userDTO.active) {
+    throw new Error('Su cuenta no ha sido verificada');
+  }
+  MailerService.sendRecoverEmail(userDTO.email, user.token);
+};
+
 export default {
   listAll,
   listPending,
@@ -514,7 +551,7 @@ export default {
   listAdmins,
   create,
   update,
-  password,
+  // password,
   approve,
   cancel,
   active,
@@ -526,4 +563,5 @@ export default {
   resendVerifyEmail,
   recoverPassword,
   activeEmail,
+  updatePassword,
 };
