@@ -198,7 +198,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         createdBy: 1,
         createdAt: new Date(),
       }).catch((error: Error) => {
-        console.log(error);
+        console.error(error);
         // create user error
         throw new Error('500');
       });
@@ -209,7 +209,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
     throw new Error('400');
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw error;
 });
 
@@ -231,7 +231,7 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
         password: bcrypt.hashSync(userDTO.password, 10),
         updatedAt: new Date(),
       }).catch((error: Error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('user update error');
       });
     }
@@ -242,12 +242,12 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
       organization: userDTO.organization,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -266,12 +266,12 @@ const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> =
       password: bcrypt.hashSync(userDTO.password, 10),
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -292,12 +292,12 @@ const approve = async (userId: number): Promise<User> => User.findOne({
       status: status.approved,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -319,12 +319,12 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
       type: profiles.client,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -345,12 +345,12 @@ const giveAdminPermission = async (userId: number): Promise<User> => User.findOn
       type: profiles.administrator,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -371,12 +371,12 @@ const removeAdminPermission = async (userId: number): Promise<User> => User.find
       type: profiles.client,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -392,11 +392,12 @@ const active = async (userId: number): Promise<User> => User.findOne({
       active: !user.get('active'),
       updatedAt: new Date(),
     }).catch((error: Error) => {
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
