@@ -273,7 +273,7 @@ router.route('/resend-verification').post(resendVerifyEmail);
 
 router.route('/recover-password').post(recoverPassword);
 
-router.route('/password').post(recoveryPasswordChange);
+router.route('/password').put(recoveryPasswordChange);
 
 router.use('/', authorized);
 

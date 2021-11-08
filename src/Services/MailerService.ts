@@ -40,7 +40,7 @@ const sendVerifyEmail = (email: string, token: string): void => {
   const htmlToSend = cheerio.load(body);
   htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
-    const url = `http://localhost:4200/verifyEmail?token=${token}`;
+    const url = `http://localhost:4200/verify-email?token=${token}`;
     if (old_url === 'PutYourLinkHere') {
       htmlToSend(value).attr('href', url);
     }
@@ -73,7 +73,7 @@ const sendRecoverEmail = (email: string, token: string): void => {
   const htmlToSend = cheerio.load(body);
   htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
-    const url = `http://localhost:4200/recoverPassword?token=${token}`;
+    const url = `http://localhost:4200/update-password?token=${token}`;
     if (old_url === 'PutYourLinkHere') {
       htmlToSend(value).attr('href', url);
     }
