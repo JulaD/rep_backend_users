@@ -246,7 +246,7 @@ const recoveryPasswordChange = async (req: Request, res: Response) => {
     const { token, password, repeat } = req.body;
     if (token) {
       if (password === repeat) {
-        await UserService.activeEmail(token);
+        await UserService.updatePassword(token, password);
       } else {
         throw new Error('Passwords do not match');
       }

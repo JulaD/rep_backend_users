@@ -200,7 +200,7 @@ const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
                     id: newUser.toJSON().id,
                     email: newUser.toJSON().email,
                 }, config_1.secret.auth, {
-                    expiresIn: '2d',
+                    expiresIn: '14d',
                 });
                 newUser.token = tkn;
                 yield newUser.save();
@@ -501,7 +501,16 @@ const resendVerifyEmail = (emailAddress) => __awaiter(void 0, void 0, void 0, fu
     if (userDTO.active) {
         throw new Error('Su cuenta ya ha sido verificada');
     }
-    MailerService_1.default.sendVerifyEmail(userDTO.email, user.token);
+    const token = jsonwebtoken_1.default.sign({
+        id: userDTO.id,
+        email: userDTO.email,
+    }, config_1.secret.auth, {
+        expiresIn: '14d',
+    });
+    yield user.update({
+        token,
+    });
+    MailerService_1.default.sendVerifyEmail(userDTO.email, token);
 });
 const recoverPassword = (emailAddress) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield users_model_1.User.findOne({ where: { email: emailAddress } });
@@ -512,7 +521,16 @@ const recoverPassword = (emailAddress) => __awaiter(void 0, void 0, void 0, func
     if (!userDTO.active) {
         throw new Error('Su cuenta no ha sido verificada');
     }
-    MailerService_1.default.sendRecoverEmail(userDTO.email, user.token);
+    const token = jsonwebtoken_1.default.sign({
+        id: userDTO.id,
+        email: userDTO.email,
+    }, config_1.secret.auth, {
+        expiresIn: '14d',
+    });
+    yield user.update({
+        token,
+    });
+    MailerService_1.default.sendRecoverEmail(userDTO.email, token);
 });
 const updatePassword = (token, userPassword) => __awaiter(void 0, void 0, void 0, function* () {
     let idUser;

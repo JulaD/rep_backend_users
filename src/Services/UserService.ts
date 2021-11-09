@@ -214,7 +214,7 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         id: newUser.toJSON().id,
         email: newUser.toJSON().email,
       }, secret.auth, {
-        expiresIn: '2d',
+        expiresIn: '14d',
       });
       newUser.token = tkn;
       await newUser.save();
@@ -499,7 +499,17 @@ const resendVerifyEmail = async (emailAddress: string) => {
   if (userDTO.active) {
     throw new Error('Su cuenta ya ha sido verificada');
   }
-  MailerService.sendVerifyEmail(userDTO.email, user.token);
+  const token = jwt.sign({
+    id: userDTO.id,
+    email: userDTO.email,
+  }, secret.auth, {
+    expiresIn: '14d',
+  });
+  await user.update({
+    token,
+  });
+
+  MailerService.sendVerifyEmail(userDTO.email, token);
 };
 
 const recoverPassword = async (emailAddress: string): Promise<void> => {
@@ -511,7 +521,17 @@ const recoverPassword = async (emailAddress: string): Promise<void> => {
   if (!userDTO.active) {
     throw new Error('Su cuenta no ha sido verificada');
   }
-  MailerService.sendRecoverEmail(userDTO.email, user.token);
+  const token = jwt.sign({
+    id: userDTO.id,
+    email: userDTO.email,
+  }, secret.auth, {
+    expiresIn: '14d',
+  });
+  await user.update({
+    token,
+  });
+
+  MailerService.sendRecoverEmail(userDTO.email, token);
 };
 
 const updatePassword = async (token: string, userPassword: string): Promise<void> => {
