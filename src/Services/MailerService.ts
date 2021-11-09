@@ -7,7 +7,7 @@ import { mail } from '../config/config';
 
 const legit = require('legit');
 
-const { emailAccount, emailPassword } = mail;
+const { emailAccount, emailPassword, frontend } = mail;
 
 // nodemailer transporter initialization
 const transporter: Transporter = nodemailer.createTransport({
@@ -43,7 +43,7 @@ const sendVerifyEmail = (email: string, token: string): void => {
   const htmlToSend = cheerio.load(body);
   htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
-    const url = `http://localhost:4200/verify-email?token=${token}`;
+    const url = `${frontend}/verify-email?token=${token}`;
     if (old_url === 'PutYourLinkHere') {
       htmlToSend(value).attr('href', url);
     }
@@ -76,7 +76,7 @@ const sendRecoverEmail = (email: string, token: string): void => {
   const htmlToSend = cheerio.load(body);
   htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
-    const url = `http://localhost:4200/update-password?token=${token}`;
+    const url = `${frontend}/update-password?token=${token}`;
     if (old_url === 'PutYourLinkHere') {
       htmlToSend(value).attr('href', url);
     }
