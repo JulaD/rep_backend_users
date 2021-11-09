@@ -192,7 +192,7 @@ const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
                     createdAt: new Date(),
                     active: false,
                 }).catch((error) => {
-                    console.log(error);
+                    console.error(error);
                     // create user error
                     throw new Error('500');
                 });
@@ -212,7 +212,7 @@ const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
             throw new Error('400');
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw error;
     });
 });
@@ -236,7 +236,7 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
                     password: bcrypt_1.default.hashSync(userDTO.password, 10),
                     updatedAt: new Date(),
                 }).catch((error) => {
-                    console.log(error);
+                    console.error(error);
                     throw new Error('user update error');
                 });
             }
@@ -248,12 +248,12 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
                 organization: userDTO.organization,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -299,12 +299,12 @@ const approve = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 status: index_enum_1.status.approved,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -328,12 +328,12 @@ const cancel = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 type: index_enum_1.profiles.client,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -356,12 +356,12 @@ const giveAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, functi
                 type: index_enum_1.profiles.administrator,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -384,12 +384,12 @@ const removeAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, func
                 type: index_enum_1.profiles.client,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -407,11 +407,12 @@ const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 active: !user.get('active'),
                 updatedAt: new Date(),
             }).catch((error) => {
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });

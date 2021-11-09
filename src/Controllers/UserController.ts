@@ -49,7 +49,7 @@ const create = async (req: Request, res: Response): Promise<Response> => {
     return res.status(200).send(user);
   } catch (error) {
     const e = error as Error;
-    console.log(e.message);
+    console.error(error);
     if (e.message === '412') {
       res.status(412).json({ error: 'Email is taken' });
     } else if (e.message === '400') {
