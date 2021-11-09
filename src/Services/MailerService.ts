@@ -3,8 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import cheerio from 'cheerio';
 import { html } from 'cheerio/lib/static';
+import { mail } from '../config/config';
 
 const legit = require('legit');
+
+const { emailAccount, emailPassword } = mail;
 
 // nodemailer transporter initialization
 const transporter: Transporter = nodemailer.createTransport({
@@ -12,8 +15,8 @@ const transporter: Transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'agusruizdiazcambon@gmail.com',
-    pass: 'vcmlraefljofhako',
+    user: emailAccount,
+    pass: emailPassword,
   },
 });
 
@@ -53,7 +56,7 @@ const sendVerifyEmail = (email: string, token: string): void => {
   body = htmlToSend.html();
   const pathToImage = path.join(__dirname, '../../logoEscuelaNutricion.png');
   const message = {
-    from: '"REP" <agusruizdiazcambon@gmail.com>',
+    from: `"REP" <${emailAccount}}>`,
     to: email,
     subject: 'Verifique su email',
     attachments: [{
@@ -86,7 +89,7 @@ const sendRecoverEmail = (email: string, token: string): void => {
   body = htmlToSend.html();
   const pathToImage = path.join(__dirname, '../../logoEscuelaNutricion.png');
   const message = {
-    from: '"REP" <agusruizdiazcambon@gmail.com>',
+    from: `"REP" <${emailAccount}}>`,
     to: email,
     subject: 'Recupere su contraseña',
     attachments: [{
@@ -108,7 +111,7 @@ const sendApprovedEmail = (email: string): void => {
   body = htmlToSend.html();
   const pathToImage = path.join(__dirname, '../../logoEscuelaNutricion.png');
   const message = {
-    from: '"REP" <agusruizdiazcambon@gmail.com>',
+    from: `"REP" <${emailAccount}}>`,
     to: email,
     subject: '¡Cuenta aprobada!',
     attachments: [{
