@@ -1,10 +1,13 @@
 import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
+import MailerService from '../Services/MailerService';
 import { User } from '../models/users.model';
 import Paginator from '../interfaces/paginator.interface';
 import UserService from '../Services/UserService';
 import { secret } from '../config/config';
 import { authorized } from '../middlewares/token.middleware';
+
+const legit = require('legit');
 
 const router = Router();
 
@@ -46,7 +49,15 @@ const create = async (req: Request, res: Response): Promise<Response> => {
     return res.status(200).send(user);
   } catch (error) {
     const e = error as Error;
-    return res.status(400).json({ error: e.message });
+    console.error(error);
+    if (e.message === '412') {
+      res.status(412).json({ error: 'Email is taken' });
+    } else if (e.message === '400') {
+      res.status(400).json({ error: 'Password too short' });
+    } else {
+      res.status(500).json({ error: 'Create user error' });
+    }
+    return res;
   }
 };
 
@@ -60,19 +71,20 @@ const update = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-const password = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const user: User = await UserService.password(Number(req.params.id), req.body);
-    return res.status(200).send(user);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
-  }
-};
+// const password = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const user: User = await UserService.password(Number(req.params.id), req.body);
+//     return res.status(200).send(user);
+//   } catch (error) {
+//     const e = error as Error;
+//     return res.status(400).json({ error: e.message });
+//   }
+// };
 
 const approve = async (req: Request, res: Response): Promise<Response> => {
   try {
     const user: User = await UserService.approve(Number(req.params.id));
+    MailerService.sendApprovedEmail(user.toJSON().email);
     return res.status(200).send(user);
   } catch (error) {
     const e = error as Error;
@@ -135,7 +147,14 @@ const login = async (req: Request, res: Response): Promise<Response> => {
     });
   } catch (error) {
     const e = error as Error;
-    return res.status(400).json({ error: e.message });
+    if (e.message === '404') {
+      res.status(404).json({ error: 'User not found' });
+    } else if (e.message === '401') {
+      res.status(401).json({ error: 'Unauthorized' });
+    } else {
+      res.status(400).json({ error: 'Auth failed' });
+    }
+    return res;
   }
 };
 
@@ -186,6 +205,60 @@ const getUser = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+const resendVerifyEmail = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+    await UserService.resendVerifyEmail(email);
+    return res.status(200).send({ message: 'Se ha enviado un mail de verificacion su correo' });
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const recoverPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+    await UserService.recoverPassword(email);
+    return res.status(200).send({ message: 'Se ha enviado a su email un mensaje para recuperar la contraseña' });
+  } catch (error) {
+    const e = error as Error;
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.query.token);
+    if (token) {
+      await UserService.activeEmail(token);
+    } else {
+      throw new Error('Cannot parse token');
+    }
+    return res.status(200).send({ message: 'User email verified.' });
+  } catch (error) {
+    return res.status(500).send({ error: error.message });
+  }
+};
+
+const recoveryPasswordChange = async (req: Request, res: Response) => {
+  try {
+    const { token, password, repeat } = req.body;
+    if (token) {
+      if (password === repeat) {
+        await UserService.updatePassword(token, password);
+      } else {
+        throw new Error('Passwords do not match');
+      }
+    } else {
+      throw new Error('Cannot parse token');
+    }
+    return res.status(200).send({ message: 'User email verified.' });
+  } catch (error) {
+    return res.status(500).send({ error: error.message });
+  }
+};
+
 router.route('/login')
   .post(login);
 
@@ -193,6 +266,14 @@ router.route('/')
   .post(create);
 
 router.post('/validate', validate);
+
+router.route('/verify-email').put(verifyEmail);
+
+router.route('/resend-verification').post(resendVerifyEmail);
+
+router.route('/recover-password').post(recoverPassword);
+
+router.route('/password').put(recoveryPasswordChange);
 
 router.use('/', authorized);
 
@@ -207,8 +288,8 @@ router.route('/:id')
   .put(update)
   .patch(active);
 
-router.route('/:id/password')
-  .put(password);
+// router.route('/:id/password')
+//   .put(password);
 
 router.route('/:id/approve')
   .put(approve);

@@ -25,5 +25,6 @@ export interface UserDTO {
   type: number;
   status: number;
   active: boolean;
+  token: string;
   createdAt: Date;
 }
