@@ -185,10 +185,18 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   where: {
     email: userDTO.email,
   },
+  paranoid: false,
 }).then(async (user: User) => {
   if (user) {
-    // email is taken
+    if (user.isSoftDeleted()) {
+      await user.restore();
+      const restored = user;
+      restored.toJSON();
+      return restored;
+    }
     throw new Error('412');
+
+    // email is taken
   } else {
     if (!MailerService.checkMailAddress(userDTO.email)) {
       throw new Error('Invalid email address');
@@ -332,6 +340,11 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
   if (!user) {
     throw new Error('user not found');
   } else {
+    // If alredy pending then delete it (soft delete)
+    if (user.toJSON().status === status.pending) {
+      user.destroy();
+      return user;
+    }
     return user.update({
       status: status.pending,
       type: profiles.client,
