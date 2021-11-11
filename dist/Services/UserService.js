@@ -14,8 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const sequelize_1 = require("sequelize");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const config_1 = require("../config/config");
 const index_enum_1 = require("../enums/index.enum");
 const users_model_1 = require("../models/users.model");
+const MailerService_1 = __importDefault(require("./MailerService"));
 const listPending = (limit, offset, search) => __awaiter(void 0, void 0, void 0, function* () {
     let options = {};
     if (limit >= 1 && offset >= 0) {
@@ -169,9 +172,13 @@ const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
         },
     }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
         if (user) {
-            throw new Error('email is taken');
+            // email is taken
+            throw new Error('412');
         }
         else {
+            if (!MailerService_1.default.checkMailAddress(userDTO.email)) {
+                throw new Error('Invalid email address');
+            }
             // se hace el checkeo antes porque luego se encripta
             if (userDTO.password.length >= 6) {
                 const newUser = yield users_model_1.User.create({
@@ -183,17 +190,29 @@ const create = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
                     status: index_enum_1.status.pending,
                     createdBy: 1,
                     createdAt: new Date(),
+                    active: false,
                 }).catch((error) => {
-                    console.log(error);
-                    throw new Error('create user error');
+                    console.error(error);
+                    // create user error
+                    throw new Error('500');
                 });
+                const tkn = jsonwebtoken_1.default.sign({
+                    id: newUser.toJSON().id,
+                    email: newUser.toJSON().email,
+                }, config_1.secret.auth, {
+                    expiresIn: '14d',
+                });
+                newUser.token = tkn;
+                yield newUser.save();
+                MailerService_1.default.sendVerifyEmail(userDTO.email, tkn);
                 newUser.toJSON();
                 return newUser;
             }
-            throw new Error('password too short');
+            // password too short
+            throw new Error('400');
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw error;
     });
 });
@@ -217,7 +236,7 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
                     password: bcrypt_1.default.hashSync(userDTO.password, 10),
                     updatedAt: new Date(),
                 }).catch((error) => {
-                    console.log(error);
+                    console.error(error);
                     throw new Error('user update error');
                 });
             }
@@ -229,41 +248,38 @@ const update = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* 
                 organization: userDTO.organization,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
-const password = (userId, userDTO) => __awaiter(void 0, void 0, void 0, function* () {
-    return users_model_1.User.findOne({
-        attributes: [
-            'id', 'name', 'email',
-        ],
-        where: {
-            id: userId,
-        },
-    }).then((user) => __awaiter(void 0, void 0, void 0, function* () {
-        if (!user) {
-            throw new Error('user not found');
-        }
-        else {
-            return user.update({
-                password: bcrypt_1.default.hashSync(userDTO.password, 10),
-                updatedAt: new Date(),
-            }).catch((error) => {
-                console.log(error);
-                throw new Error('user update error');
-            });
-        }
-    })).catch((error) => {
-        console.log(error);
-        throw new Error('find user error');
-    });
-});
+// const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
+//   attributes: [
+//     'id', 'name', 'email',
+//   ],
+//   where: {
+//     id: userId,
+//   },
+// }).then(async (user: User) => {
+//   if (!user) {
+//     throw new Error('user not found');
+//   } else {
+//     return user.update({
+//       password: bcrypt.hashSync(userDTO.password, 10),
+//       updatedAt: new Date(),
+//     }).catch((error: Error) => {
+//       console.log(error);
+//       throw new Error('user update error');
+//     });
+//   }
+// }).catch((error: Error) => {
+//   console.log(error);
+//   throw new Error('find user error');
+// });
 const approve = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     return users_model_1.User.findOne({
         attributes: [
@@ -283,12 +299,12 @@ const approve = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 status: index_enum_1.status.approved,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -312,12 +328,12 @@ const cancel = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 type: index_enum_1.profiles.client,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -340,12 +356,12 @@ const giveAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, functi
                 type: index_enum_1.profiles.administrator,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -368,12 +384,12 @@ const removeAdminPermission = (userId) => __awaiter(void 0, void 0, void 0, func
                 type: index_enum_1.profiles.client,
                 updatedAt: new Date(),
             }).catch((error) => {
-                console.log(error);
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -391,11 +407,12 @@ const active = (userId) => __awaiter(void 0, void 0, void 0, function* () {
                 active: !user.get('active'),
                 updatedAt: new Date(),
             }).catch((error) => {
+                console.error(error);
                 throw new Error('user update error');
             });
         }
     })).catch((error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('find user error');
     });
 });
@@ -407,22 +424,25 @@ const login = (userDTO) => __awaiter(void 0, void 0, void 0, function* () {
         ],
         where: {
             email: userDTO.email,
-            status: index_enum_1.status.approved,
-            active: true,
         },
     }).then((user) => {
         if (!user) {
-            throw new Error('user not found');
+            // user nor found
+            throw new Error('404');
+        }
+        else if (user.get('status') === index_enum_1.status.pending || user.get('active') === false) {
+            // unauthorized
+            throw new Error('401');
         }
         else if (user && bcrypt_1.default.compareSync(userDTO.password, String(user.get('password')))) {
             return user;
         }
         else {
-            throw new Error('auth failed');
+            // generic error
+            throw new Error('400');
         }
     }).catch((error) => {
-        console.log(error);
-        throw new Error('find user error');
+        throw error;
     });
 });
 const listUsersById = (ids) => __awaiter(void 0, void 0, void 0, function* () {
@@ -443,6 +463,104 @@ const getUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
         },
     });
 });
+const getUserWithToken = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    return users_model_1.User.findOne({
+        attributes: ['id', 'name', 'organization', 'token'],
+        where: {
+            id,
+            deletedAt: null,
+        },
+    });
+});
+const activeEmail = (userToken) => __awaiter(void 0, void 0, void 0, function* () {
+    let id;
+    jsonwebtoken_1.default.verify(userToken, config_1.secret.auth, (error, decoded) => {
+        if (error) {
+            const e = error;
+            throw e;
+        }
+        else {
+            id = decoded.id;
+        }
+    });
+    const user = yield getUserWithToken(id);
+    if (user.token === userToken) {
+        user.update({
+            active: true,
+            updatedAt: new Date(),
+        }).catch((error) => {
+            throw new Error('user update error');
+        });
+    }
+});
+const resendVerifyEmail = (emailAddress) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield users_model_1.User.findOne({ where: { email: emailAddress } });
+    if (user === null) {
+        throw new Error('El email ingresado no se encuentra registrado en el sistema');
+    }
+    const userDTO = user.toJSON();
+    if (userDTO.active) {
+        throw new Error('Su cuenta ya ha sido verificada');
+    }
+    const token = jsonwebtoken_1.default.sign({
+        id: userDTO.id,
+        email: userDTO.email,
+    }, config_1.secret.auth, {
+        expiresIn: '14d',
+    });
+    yield user.update({
+        token,
+    });
+    MailerService_1.default.sendVerifyEmail(userDTO.email, token);
+});
+const recoverPassword = (emailAddress) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield users_model_1.User.findOne({ where: { email: emailAddress } });
+    if (user === null) {
+        throw new Error('El email ingresado no se encuentra registrado en el sistema');
+    }
+    const userDTO = user.toJSON();
+    if (!userDTO.active) {
+        throw new Error('Su cuenta no ha sido verificada');
+    }
+    const token = jsonwebtoken_1.default.sign({
+        id: userDTO.id,
+        email: userDTO.email,
+    }, config_1.secret.auth, {
+        expiresIn: '14d',
+    });
+    yield user.update({
+        token,
+    });
+    MailerService_1.default.sendRecoverEmail(userDTO.email, token);
+});
+const updatePassword = (token, userPassword) => __awaiter(void 0, void 0, void 0, function* () {
+    let idUser;
+    jsonwebtoken_1.default.verify(token, config_1.secret.auth, (error, decoded) => {
+        if (error) {
+            const e = error;
+            throw e;
+        }
+        else {
+            idUser = decoded.id;
+        }
+    });
+    const user = yield users_model_1.User.findOne({ where: { id: idUser } });
+    user.update({
+        password: bcrypt_1.default.hashSync(userPassword, 10),
+        updatedAt: new Date(),
+    }).catch((error) => {
+        console.log(error);
+        throw new Error('user update error');
+    });
+    if (user === null) {
+        throw new Error('El email ingresado no se encuentra registrado en el sistema');
+    }
+    const userDTO = user.toJSON();
+    if (!userDTO.active) {
+        throw new Error('Su cuenta no ha sido verificada');
+    }
+    MailerService_1.default.sendRecoverEmail(userDTO.email, user.token);
+});
 exports.default = {
     listAll,
     listPending,
@@ -451,7 +569,7 @@ exports.default = {
     listAdmins,
     create,
     update,
-    password,
+    // password,
     approve,
     cancel,
     active,
@@ -460,5 +578,9 @@ exports.default = {
     login,
     listUsersById,
     getUser,
+    resendVerifyEmail,
+    recoverPassword,
+    activeEmail,
+    updatePassword,
 };
 //# sourceMappingURL=UserService.js.map

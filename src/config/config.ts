@@ -13,3 +13,9 @@ export const development = {
 export const secret = {
   auth: 'HN$t@2*?mDusFsT!',
 };
+
+export const mail = {
+  emailAccount: process.env.EMAIL_ACCOUNT,
+  emailPassword: process.env.EMAIL_PASSWORD,
+  frontend: process.env.FRONTEND,
+};

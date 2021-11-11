@@ -1,10 +1,14 @@
 import bcrypt from 'bcrypt';
 import { Op, where } from 'sequelize';
+import jwt from 'jsonwebtoken';
+import { secret } from '../config/config';
 import { profiles, status } from '../enums/index.enum';
 import Paginator from '../interfaces/paginator.interface';
 import { User } from '../models/users.model';
-
-import { UserCreateDTO, UserLoginDTO, UserUpdateDTO } from '../DTOs/UserDTO';
+import {
+  UserCreateDTO, UserDTO, UserLoginDTO, UserUpdateDTO,
+} from '../DTOs/UserDTO';
+import MailerService from './MailerService';
 
 const listPending = async (limit: number, offset: number,
   search: string): Promise<Paginator<User>> => {
@@ -186,6 +190,9 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
     // email is taken
     throw new Error('412');
   } else {
+    if (!MailerService.checkMailAddress(userDTO.email)) {
+      throw new Error('Invalid email address');
+    }
     // se hace el checkeo antes porque luego se encripta
     if (userDTO.password.length >= 6) {
       const newUser: User = await User.create({
@@ -197,19 +204,30 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         status: status.pending,
         createdBy: 1,
         createdAt: new Date(),
+        active: false,
       }).catch((error: Error) => {
-        console.log(error);
+        console.error(error);
         // create user error
         throw new Error('500');
       });
+      const tkn = jwt.sign({
+        id: newUser.toJSON().id,
+        email: newUser.toJSON().email,
+      }, secret.auth, {
+        expiresIn: '14d',
+      });
+      newUser.token = tkn;
+      await newUser.save();
+      MailerService.sendVerifyEmail(userDTO.email, tkn);
       newUser.toJSON();
+
       return newUser;
     }
     // password too short
     throw new Error('400');
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw error;
 });
 
@@ -231,7 +249,7 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
         password: bcrypt.hashSync(userDTO.password, 10),
         updatedAt: new Date(),
       }).catch((error: Error) => {
-        console.log(error);
+        console.error(error);
         throw new Error('user update error');
       });
     }
@@ -242,38 +260,38 @@ const update = async (userId: number, userDTO: UserUpdateDTO): Promise<User> => 
       organization: userDTO.organization,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
-const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
-  attributes: [
-    'id', 'name', 'email',
-  ],
-  where: {
-    id: userId,
-  },
-}).then(async (user: User) => {
-  if (!user) {
-    throw new Error('user not found');
-  } else {
-    return user.update({
-      password: bcrypt.hashSync(userDTO.password, 10),
-      updatedAt: new Date(),
-    }).catch((error: Error) => {
-      console.log(error);
-      throw new Error('user update error');
-    });
-  }
-}).catch((error: Error) => {
-  console.log(error);
-  throw new Error('find user error');
-});
+// const password = async (userId: number, userDTO: UserCreateDTO): Promise<User> => User.findOne({
+//   attributes: [
+//     'id', 'name', 'email',
+//   ],
+//   where: {
+//     id: userId,
+//   },
+// }).then(async (user: User) => {
+//   if (!user) {
+//     throw new Error('user not found');
+//   } else {
+//     return user.update({
+//       password: bcrypt.hashSync(userDTO.password, 10),
+//       updatedAt: new Date(),
+//     }).catch((error: Error) => {
+//       console.log(error);
+//       throw new Error('user update error');
+//     });
+//   }
+// }).catch((error: Error) => {
+//   console.log(error);
+//   throw new Error('find user error');
+// });
 
 const approve = async (userId: number): Promise<User> => User.findOne({
   attributes: [
@@ -292,12 +310,12 @@ const approve = async (userId: number): Promise<User> => User.findOne({
       status: status.approved,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -319,12 +337,12 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
       type: profiles.client,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -345,12 +363,12 @@ const giveAdminPermission = async (userId: number): Promise<User> => User.findOn
       type: profiles.administrator,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -371,12 +389,12 @@ const removeAdminPermission = async (userId: number): Promise<User> => User.find
       type: profiles.client,
       updatedAt: new Date(),
     }).catch((error: Error) => {
-      console.log(error);
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -392,11 +410,12 @@ const active = async (userId: number): Promise<User> => User.findOne({
       active: !user.get('active'),
       updatedAt: new Date(),
     }).catch((error: Error) => {
+      console.error(error);
       throw new Error('user update error');
     });
   }
 }).catch((error: Error) => {
-  console.log(error);
+  console.error(error);
   throw new Error('find user error');
 });
 
@@ -443,6 +462,108 @@ const getUser = async (id: number): Promise<User> => User.findOne({
   },
 });
 
+const getUserWithToken = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization', 'token'],
+  where: {
+    id,
+    deletedAt: null,
+  },
+});
+
+const activeEmail = async (userToken: string): Promise<void> => {
+  let id: number;
+  jwt.verify(userToken, secret.auth, (error: Error, decoded: {id: number; email: string}) => {
+    if (error) {
+      const e = error as Error;
+      throw e;
+    } else {
+      id = decoded.id;
+    }
+  });
+  const user: User = await getUserWithToken(id);
+  if (user.token === userToken) {
+    user.update({
+      active: true,
+      updatedAt: new Date(),
+    }).catch((error: Error) => {
+      throw new Error('user update error');
+    });
+  }
+};
+
+const resendVerifyEmail = async (emailAddress: string) => {
+  const user = await User.findOne({ where: { email: emailAddress } });
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (userDTO.active) {
+    throw new Error('Su cuenta ya ha sido verificada');
+  }
+  const token = jwt.sign({
+    id: userDTO.id,
+    email: userDTO.email,
+  }, secret.auth, {
+    expiresIn: '14d',
+  });
+  await user.update({
+    token,
+  });
+
+  MailerService.sendVerifyEmail(userDTO.email, token);
+};
+
+const recoverPassword = async (emailAddress: string): Promise<void> => {
+  const user = await User.findOne({ where: { email: emailAddress } });
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (!userDTO.active) {
+    throw new Error('Su cuenta no ha sido verificada');
+  }
+  const token = jwt.sign({
+    id: userDTO.id,
+    email: userDTO.email,
+  }, secret.auth, {
+    expiresIn: '14d',
+  });
+  await user.update({
+    token,
+  });
+
+  MailerService.sendRecoverEmail(userDTO.email, token);
+};
+
+const updatePassword = async (token: string, userPassword: string): Promise<void> => {
+  let idUser: number;
+  jwt.verify(token, secret.auth, (error: Error, decoded: {id: number; email: string}) => {
+    if (error) {
+      const e = error as Error;
+      throw e;
+    } else {
+      idUser = decoded.id;
+    }
+  });
+  const user = await User.findOne({ where: { id: idUser } });
+  user.update({
+    password: bcrypt.hashSync(userPassword, 10),
+    updatedAt: new Date(),
+  }).catch((error: Error) => {
+    console.log(error);
+    throw new Error('user update error');
+  });
+
+  if (user === null) {
+    throw new Error('El email ingresado no se encuentra registrado en el sistema');
+  }
+  const userDTO: UserDTO = user.toJSON();
+  if (!userDTO.active) {
+    throw new Error('Su cuenta no ha sido verificada');
+  }
+  MailerService.sendRecoverEmail(userDTO.email, user.token);
+};
+
 export default {
   listAll,
   listPending,
@@ -451,7 +572,7 @@ export default {
   listAdmins,
   create,
   update,
-  password,
+  // password,
   approve,
   cancel,
   active,
@@ -460,4 +581,8 @@ export default {
   login,
   listUsersById,
   getUser,
+  resendVerifyEmail,
+  recoverPassword,
+  activeEmail,
+  updatePassword,
 };

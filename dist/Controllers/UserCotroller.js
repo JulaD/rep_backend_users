@@ -60,7 +60,17 @@ const create = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         const e = error;
-        return res.status(400).json({ error: e.message });
+        console.log(e.message);
+        if (e.message === '412') {
+            res.status(412).json({ error: 'Email is taken' });
+        }
+        else if (e.message === '400') {
+            res.status(400).json({ error: 'Password too short' });
+        }
+        else {
+            res.status(500).json({ error: 'Create user error' });
+        }
+        return res;
     }
 });
 const update = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -149,7 +159,16 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         const e = error;
-        return res.status(400).json({ error: e.message });
+        if (e.message === '404') {
+            res.status(404).json({ error: 'User not found' });
+        }
+        else if (e.message === '401') {
+            res.status(401).json({ error: 'Unauthorized' });
+        }
+        else {
+            res.status(400).json({ error: 'Auth failed' });
+        }
+        return res;
     }
 });
 const checkUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
