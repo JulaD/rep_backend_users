@@ -190,6 +190,15 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   if (user) {
     if (user.isSoftDeleted()) {
       await user.restore();
+      user.update({
+        name: userDTO.name,
+        organization: userDTO.organization,
+        password: bcrypt.hashSync(userDTO.password, 10),
+        type: profiles.client,
+        status: status.pending,
+        updatedAt: new Date(),
+        active: false,
+      });
       const restored = user;
       restored.toJSON();
       return restored;
