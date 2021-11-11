@@ -106,7 +106,7 @@ const sendApprovedEmail = (email: string): void => {
   const pathToFile = path.join(__dirname, '../../adminApprovedEmail.html');
   let body: string = fs.readFileSync(pathToFile, 'utf8').toString();
   const htmlToSend = cheerio.load(body);
-  htmlToSend('p').each((index, value) => {
+  htmlToSend('a').each((index, value) => {
     const old_url = htmlToSend(value).attr('href');
     const url = `${frontend}/dashboard`;
     if (old_url === 'PutYourLinkHere') {

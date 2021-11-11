@@ -331,6 +331,7 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
   attributes: [
     'id', 'name',
     'email', 'type',
+    'status',
     'createdAt',
   ],
   where: {
