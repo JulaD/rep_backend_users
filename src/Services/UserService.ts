@@ -216,6 +216,15 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
       await restored.save();
       MailerService.sendVerifyEmail(userDTO.email, tkn);
       restored.toJSON();
+      const tkn = jwt.sign({
+        id: restored.toJSON().id,
+        email: restored.toJSON().email,
+      }, secret.auth, {
+        expiresIn: '14d',
+      });
+      restored.token = tkn;
+      await restored.save();
+      MailerService.sendVerifyEmail(userDTO.email, tkn);
       return restored;
     }
     throw new Error('412');
