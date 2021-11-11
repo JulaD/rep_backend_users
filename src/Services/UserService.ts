@@ -189,6 +189,12 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
 }).then(async (user: User) => {
   if (user) {
     if (user.isSoftDeleted()) {
+      if (!MailerService.checkMailAddress(userDTO.email)) {
+        throw new Error('Invalid email address');
+      }
+      if (userDTO.password.length < 6) {
+        throw new Error('400');
+      }
       await user.restore();
       user.update({
         name: userDTO.name,
@@ -200,6 +206,15 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
         active: false,
       });
       const restored = user;
+      const tkn = jwt.sign({
+        id: restored.toJSON().id,
+        email: restored.toJSON().email,
+      }, secret.auth, {
+        expiresIn: '14d',
+      });
+      restored.token = tkn;
+      await restored.save();
+      MailerService.sendVerifyEmail(userDTO.email, tkn);
       restored.toJSON();
       return restored;
     }
