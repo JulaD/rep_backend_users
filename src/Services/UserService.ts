@@ -443,6 +443,8 @@ const active = async (userId: number): Promise<User> => User.findOne({
 }).then(async (user: User) => {
   if (!user) {
     throw new Error('user not found');
+  } if (!user.get('active')) {
+    throw new Error('User must be verified first');
   } else {
     return user.update({
       active: !user.get('active'),
