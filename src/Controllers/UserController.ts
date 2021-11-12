@@ -65,7 +65,7 @@ const create = async (req: Request, res: Response): Promise<Response> => {
 
 const update = async (req: any, res: Response): Promise<Response> => {
   try {
-    if (req.auth.userId === req.params.id) {
+    if (req.auth.userId === Number(req.params.id)) {
       const user: User = await UserService.update(Number(req.params.id), req.body);
       return res.status(200).send(user);
     }
@@ -88,7 +88,7 @@ const update = async (req: any, res: Response): Promise<Response> => {
 
 const approve = async (req: any, res: Response): Promise<Response> => {
   try {
-    if (req.auth.role === ROLE.ADMIN) {
+    if (req.auth.userType === ROLE.ADMIN) {
       const user: User = await UserService.approve(Number(req.params.id));
       MailerService.sendApprovedEmail(user.toJSON().email);
       return res.status(200).send(user);
@@ -102,7 +102,7 @@ const approve = async (req: any, res: Response): Promise<Response> => {
 
 const cancel = async (req: any, res: Response): Promise<Response> => {
   try {
-    if (req.auth.role === ROLE.ADMIN) {
+    if (req.auth.userType === ROLE.ADMIN) {
       const user: User = await UserService.cancel(Number(req.params.id));
       return res.status(200).send(user);
     }
@@ -115,7 +115,7 @@ const cancel = async (req: any, res: Response): Promise<Response> => {
 
 const giveAdminPermission = async (req: any, res: Response): Promise<Response> => {
   try {
-    if (req.auth.role === ROLE.ADMIN) {
+    if (req.auth.userType === ROLE.ADMIN) {
       const user: User = await UserService.giveAdminPermission(Number(req.params.id));
       return res.status(200).send(user);
     }
@@ -128,7 +128,7 @@ const giveAdminPermission = async (req: any, res: Response): Promise<Response> =
 
 const removeAdminPermission = async (req: any, res: Response): Promise<Response> => {
   try {
-    if (req.auth.role === ROLE.ADMIN) {
+    if (req.auth.userType === ROLE.ADMIN) {
       const user: User = await UserService.removeAdminPermission(Number(req.params.id));
       return res.status(200).send(user);
     }
