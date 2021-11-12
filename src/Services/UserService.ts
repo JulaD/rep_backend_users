@@ -41,7 +41,7 @@ const listPending = async (limit: number, offset: number,
       'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
     ],
     order: [
-      ['createdAt', 'ASC'],
+      ['createdAt', 'DESC'],
     ],
     ...options,
   });
@@ -78,7 +78,7 @@ const listApproved = async (limit: number, offset: number,
       'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
     ],
     order: [
-      ['createdAt', 'ASC'],
+      ['createdAt', 'DESC'],
     ],
     ...options,
   });
@@ -117,7 +117,7 @@ const listClients = async (limit: number, offset: number,
       'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
     ],
     order: [
-      ['createdAt', 'ASC'],
+      ['createdAt', 'DESC'],
     ],
     ...options,
   });
@@ -156,7 +156,7 @@ const listAdmins = async (limit: number, offset: number,
       'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
     ],
     order: [
-      ['createdAt', 'ASC'],
+      ['createdAt', 'DESC'],
     ],
     ...options,
   });
@@ -175,7 +175,7 @@ const listAll = async (limit: number, offset: number): Promise<Paginator<User>> 
       'id', 'name', 'email', 'organization', 'type', 'status', 'active', 'createdAt',
     ],
     order: [
-      ['createdAt', 'ASC'],
+      ['createdAt', 'DESC'],
     ],
     ...options,
   });

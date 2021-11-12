@@ -7,7 +7,6 @@ export const development = {
   host: 'localhost',
   dialect: 'mysql',
   logging: false,
-  timezone: '-03:00',
 };
 
 export const secret = {
