@@ -500,6 +500,15 @@ const getUser = async (id: number): Promise<User> => User.findOne({
   },
 });
 
+const getActiveUser = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization'],
+  where: {
+    id,
+    deletedAt: null,
+    active: true,
+  },
+});
+
 const getUserWithToken = async (id: number): Promise<User> => User.findOne({
   attributes: ['id', 'name', 'organization', 'token'],
   where: {
@@ -619,6 +628,7 @@ export default {
   login,
   listUsersById,
   getUser,
+  getActiveUser,
   resendVerifyEmail,
   recoverPassword,
   activeEmail,

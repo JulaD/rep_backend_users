@@ -169,13 +169,18 @@ const checkUser = async (req: any, res: Response): Promise<Response> => {
 const validate = async (req: Request, res: Response): Promise<Response> => {
   const { token } = req.body;
   if (token) {
-    jwt.verify(token, secret.auth, (error: Error, decoded: {user: number; role: number}) => {
+    jwt.verify(token, secret.auth, async (error: Error, decoded: {user: number; role: number}) => {
       if (error) {
         const message = 'Invalid token';
         return res.status(401).send({ message });
       }
       const userId = decoded.user;
-      return res.status(200).send({ userId });
+      const activeUser = await UserService.getActiveUser(userId);
+      if (activeUser) {
+        return res.status(200).send({ userId });
+      }
+      const message = 'User is not active';
+      return res.status(401).send({ message });
     });
   } else {
     return res.status(400).send('auth token not supplied');
