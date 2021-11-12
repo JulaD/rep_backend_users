@@ -48,5 +48,5 @@ User.sync();
 app.use(Routes);
 
 app.listen(PORT, (): void => {
-  console.log(`REPP Backend running here 👉 https://localhost:${PORT}`);
+  console.log(`REPP Users Module running here 👉 https://localhost:${PORT}`);
 });

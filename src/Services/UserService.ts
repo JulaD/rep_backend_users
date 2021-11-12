@@ -185,10 +185,42 @@ const create = async (userDTO: UserCreateDTO): Promise<User> => User.findOne({
   where: {
     email: userDTO.email,
   },
+  paranoid: false,
 }).then(async (user: User) => {
   if (user) {
-    // email is taken
+    if (user.isSoftDeleted()) {
+      if (!MailerService.checkMailAddress(userDTO.email)) {
+        throw new Error('Invalid email address');
+      }
+      if (userDTO.password.length < 6) {
+        throw new Error('400');
+      }
+      await user.restore();
+      user.update({
+        name: userDTO.name,
+        organization: userDTO.organization,
+        password: bcrypt.hashSync(userDTO.password, 10),
+        type: profiles.client,
+        status: status.pending,
+        updatedAt: new Date(),
+        active: false,
+      });
+      const restored = user;
+      const tkn = jwt.sign({
+        id: restored.toJSON().id,
+        email: restored.toJSON().email,
+      }, secret.auth, {
+        expiresIn: '14d',
+      });
+      restored.token = tkn;
+      await restored.save();
+      MailerService.sendVerifyEmail(userDTO.email, tkn);
+      restored.toJSON();
+      return restored;
+    }
     throw new Error('412');
+
+    // email is taken
   } else {
     if (!MailerService.checkMailAddress(userDTO.email)) {
       throw new Error('Invalid email address');
@@ -323,6 +355,7 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
   attributes: [
     'id', 'name',
     'email', 'type',
+    'status',
     'createdAt',
   ],
   where: {
@@ -332,6 +365,11 @@ const cancel = async (userId: number): Promise<User> => User.findOne({
   if (!user) {
     throw new Error('user not found');
   } else {
+    // If alredy pending then delete it (soft delete)
+    if (user.toJSON().status === status.pending) {
+      user.destroy();
+      return user;
+    }
     return user.update({
       status: status.pending,
       type: profiles.client,
@@ -462,6 +500,15 @@ const getUser = async (id: number): Promise<User> => User.findOne({
   },
 });
 
+const getActiveUser = async (id: number): Promise<User> => User.findOne({
+  attributes: ['id', 'name', 'organization'],
+  where: {
+    id,
+    deletedAt: null,
+    active: true,
+  },
+});
+
 const getUserWithToken = async (id: number): Promise<User> => User.findOne({
   attributes: ['id', 'name', 'organization', 'token'],
   where: {
@@ -581,6 +628,7 @@ export default {
   login,
   listUsersById,
   getUser,
+  getActiveUser,
   resendVerifyEmail,
   recoverPassword,
   activeEmail,

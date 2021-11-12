@@ -11,6 +11,8 @@ const legit = require('legit');
 
 const router = Router();
 
+const ROLE = { ADMIN: 1, CLIENT: 2 };
+
 const listUsers = async (req: Request, res: Response): Promise<Response> => {
   try {
     let users: Paginator<User>;
@@ -61,10 +63,13 @@ const create = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-const update = async (req: Request, res: Response): Promise<Response> => {
+const update = async (req: any, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.update(Number(req.params.id), req.body);
-    return res.status(200).send(user);
+    if (req.auth.userId === Number(req.params.id)) {
+      const user: User = await UserService.update(Number(req.params.id), req.body);
+      return res.status(200).send(user);
+    }
+    return res.status(403).send();
   } catch (error) {
     const e = error as Error;
     return res.status(400).json({ error: e.message });
@@ -81,41 +86,53 @@ const update = async (req: Request, res: Response): Promise<Response> => {
 //   }
 // };
 
-const approve = async (req: Request, res: Response): Promise<Response> => {
+const approve = async (req: any, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.approve(Number(req.params.id));
-    MailerService.sendApprovedEmail(user.toJSON().email);
-    return res.status(200).send(user);
+    if (req.auth.userType === ROLE.ADMIN) {
+      const user: User = await UserService.approve(Number(req.params.id));
+      MailerService.sendApprovedEmail(user.toJSON().email);
+      return res.status(200).send(user);
+    }
+    return res.status(403).send();
   } catch (error) {
     const e = error as Error;
     return res.status(400).json({ error: e.message });
   }
 };
 
-const cancel = async (req: Request, res: Response): Promise<Response> => {
+const cancel = async (req: any, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.cancel(Number(req.params.id));
-    return res.status(200).send(user);
+    if (req.auth.userType === ROLE.ADMIN) {
+      const user: User = await UserService.cancel(Number(req.params.id));
+      return res.status(200).send(user);
+    }
+    return res.status(403).send();
   } catch (error) {
     const e = error as Error;
     return res.status(400).json({ error: e.message });
   }
 };
 
-const giveAdminPermission = async (req: Request, res: Response): Promise<Response> => {
+const giveAdminPermission = async (req: any, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.giveAdminPermission(Number(req.params.id));
-    return res.status(200).send(user);
+    if (req.auth.userType === ROLE.ADMIN) {
+      const user: User = await UserService.giveAdminPermission(Number(req.params.id));
+      return res.status(200).send(user);
+    }
+    return res.status(403).send();
   } catch (error) {
     const e = error as Error;
     return res.status(400).json({ error: e.message });
   }
 };
 
-const removeAdminPermission = async (req: Request, res: Response): Promise<Response> => {
+const removeAdminPermission = async (req: any, res: Response): Promise<Response> => {
   try {
-    const user: User = await UserService.removeAdminPermission(Number(req.params.id));
-    return res.status(200).send(user);
+    if (req.auth.userType === ROLE.ADMIN) {
+      const user: User = await UserService.removeAdminPermission(Number(req.params.id));
+      return res.status(200).send(user);
+    }
+    return res.status(403).send();
   } catch (error) {
     const e = error as Error;
     return res.status(400).json({ error: e.message });
@@ -169,14 +186,21 @@ const checkUser = async (req: any, res: Response): Promise<Response> => {
 const validate = async (req: Request, res: Response): Promise<Response> => {
   const { token } = req.body;
   if (token) {
-    jwt.verify(token, secret.auth, (error: Error, decoded: {user: number; role: number}) => {
-      if (error) {
-        const message = 'Invalid token';
+    await jwt.verify(
+      token, secret.auth, async (error: Error, decoded: {user: number; role: number}) => {
+        if (error) {
+          const message = 'Invalid token';
+          return res.status(401).send({ message });
+        }
+        const userId = decoded.user;
+        const activeUser = await UserService.getActiveUser(userId);
+        if (activeUser) {
+          return res.status(200).send({ userId });
+        }
+        const message = 'User is not active';
         return res.status(401).send({ message });
-      }
-      const userId = decoded.user;
-      return res.status(200).send({ userId });
-    });
+      },
+    );
   } else {
     return res.status(400).send('auth token not supplied');
   }
@@ -184,6 +208,7 @@ const validate = async (req: Request, res: Response): Promise<Response> => {
 };
 
 const listUsersById = async (req: Request, res: Response): Promise<Response> => {
+  // TODO: add validation for admin
   try {
     const { userIds } = req.body;
     const users = await UserService.listUsersById(userIds);
@@ -195,6 +220,7 @@ const listUsersById = async (req: Request, res: Response): Promise<Response> => 
 };
 
 const getUser = async (req: Request, res: Response): Promise<Response> => {
+  // TODO: add validation for admin
   try {
     const userId = Number(req.params.id);
     const user: User = await UserService.getUser(userId);
