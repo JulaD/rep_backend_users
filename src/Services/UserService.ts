@@ -31,6 +31,7 @@ const listPending = async (limit: number, offset: number,
       options = {
         where: {
           status: status.pending,
+          active: true,
         },
         limit,
         offset,
