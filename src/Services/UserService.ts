@@ -18,6 +18,7 @@ const listPending = async (limit: number, offset: number,
       options = {
         where: {
           status: status.pending,
+          active: true,
           [Op.or]: [
             { name: { [Op.substring]: search } },
             { email: { [Op.substring]: search } },
