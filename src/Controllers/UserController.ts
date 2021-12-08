@@ -13,36 +13,42 @@ const router = Router();
 
 const ROLE = { ADMIN: 1, CLIENT: 2 };
 
-const listUsers = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    let users: Paginator<User>;
-    if (req.query.type !== null) {
-      if (req.query.type === 'pending') {
-        users = await UserService
-          .listPending(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-      } else if (req.query.type === 'approved') {
-        users = await UserService
-          .listApproved(
-            Number(req.query.limit), Number(req.query.offset), String(req.query.search),
-          );
-      } else if (req.query.type === 'clients') {
-        users = await UserService
-          .listClients(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
-      } else if (req.query.type === 'admins') {
-        users = await UserService
-          .listAdmins(Number(req.query.limit), Number(req.query.offset), String(req.query.search));
+const listUsers = async (req: any, res: Response): Promise<Response> => {
+  if (req.auth.userType === ROLE.ADMIN) {
+    try {
+      let users: Paginator<User>;
+      if (req.query.type !== null) {
+        if (req.query.type === 'pending') {
+          users = await UserService
+            .listPending(Number(req.query.limit), Number(req.query.offset),
+              String(req.query.search));
+        } else if (req.query.type === 'approved') {
+          users = await UserService
+            .listApproved(
+              Number(req.query.limit), Number(req.query.offset), String(req.query.search),
+            );
+        } else if (req.query.type === 'clients') {
+          users = await UserService
+            .listClients(Number(req.query.limit), Number(req.query.offset),
+              String(req.query.search));
+        } else if (req.query.type === 'admins') {
+          users = await UserService
+            .listAdmins(Number(req.query.limit), Number(req.query.offset),
+              String(req.query.search));
+        } else {
+          return res.status(400).json({ error: 'Invalid type' });
+        }
       } else {
-        return res.status(400).json({ error: 'Invalid type' });
+        users = await UserService
+          .listAll(Number(req.query.limit), Number(req.query.offset));
       }
-    } else {
-      users = await UserService
-        .listAll(Number(req.query.limit), Number(req.query.offset));
+      return res.status(200).send(users);
+    } catch (error) {
+      const e = error as Error;
+      return res.status(400).json({ error: e.message });
     }
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
   }
+  return res.status(403).send();
 };
 
 const create = async (req: Request, res: Response): Promise<Response> => {
