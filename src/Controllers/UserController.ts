@@ -207,28 +207,32 @@ const validate = async (req: Request, res: Response): Promise<Response> => {
   return res.status(500).send();
 };
 
-const listUsersById = async (req: Request, res: Response): Promise<Response> => {
-  // TODO: add validation for admin
-  try {
-    const { userIds } = req.body;
-    const users = await UserService.listUsersById(userIds);
-    return res.status(200).send(users);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
+const listUsersById = async (req: any, res: Response): Promise<Response> => {
+  if (req.auth.userType === ROLE.ADMIN) {
+    try {
+      const { userIds } = req.body;
+      const users = await UserService.listUsersById(userIds);
+      return res.status(200).send(users);
+    } catch (error) {
+      const e = error as Error;
+      return res.status(400).json({ error: e.message });
+    }
   }
+  return res.status(403).send();
 };
 
-const getUser = async (req: Request, res: Response): Promise<Response> => {
-  // TODO: add validation for admin
-  try {
-    const userId = Number(req.params.id);
-    const user: User = await UserService.getUser(userId);
-    return res.status(200).send(user);
-  } catch (error) {
-    const e = error as Error;
-    return res.status(400).json({ error: e.message });
+const getUser = async (req: any, res: Response): Promise<Response> => {
+  const userId = Number(req.params.id);
+  if (req.auth.userType === ROLE.ADMIN || userId === req.auth.userId) {
+    try {
+      const user: User = await UserService.getUser(userId);
+      return res.status(200).send(user);
+    } catch (error) {
+      const e = error as Error;
+      return res.status(400).json({ error: e.message });
+    }
   }
+  return res.status(403).send();
 };
 
 const resendVerifyEmail = async (req: Request, res: Response): Promise<Response> => {
